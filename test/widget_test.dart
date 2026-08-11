@@ -1,44 +1,30 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_teacher_mobile/src/app.dart';
-import 'package:smart_teacher_mobile/src/features/classes/data/classes_repository.dart';
-import 'package:smart_teacher_mobile/src/features/classes/domain/class_model.dart';
+import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 
-/// A repository stub that returns immediately, so widget tests don't depend on
-/// the mock's simulated network delay.
-class _FakeClassesRepository implements ClassesRepository {
-  @override
-  Future<List<ClassModel>> fetchClasses() async => const [
-        ClassModel(
-          id: 'c1',
-          name: 'Algebra I',
-          subject: 'Mathematics',
-          grade: 'Grade 8',
-          studentCount: 28,
-          room: 'Room 204',
-          schedule: 'Mon, Wed · 09:00 AM',
-        ),
-      ];
-}
+import 'support/fake_token_storage.dart';
 
 void main() {
-  testWidgets('Home renders greeting and loaded class data', (tester) async {
+  testWidgets('App boots to the splash screen', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classesRepositoryProvider.overrideWithValue(
-            _FakeClassesRepository(),
-          ),
+          tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
         ],
         child: const SmartTeacherApp(),
       ),
     );
 
-    // Greeting is shown immediately.
-    expect(find.text('Good morning, Alex'), findsOneWidget);
+    // First frame, before the session restore resolves: the router parks on
+    // the splash screen rather than guessing which side of the gate to show.
+    expect(find.text('Smart Teacher'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Let the FutureProvider resolve, then the class should appear.
+    // Once storage answers "no session", the gate takes over (PRD §6.6).
     await tester.pumpAndSettle();
-    expect(find.text('Algebra I'), findsWidgets);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

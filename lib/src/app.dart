@@ -14,6 +14,7 @@ class SmartTeacherApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeControllerProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
@@ -21,7 +22,7 @@ class SmartTeacherApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }
