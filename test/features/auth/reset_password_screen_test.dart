@@ -16,8 +16,9 @@ import '../../support/fake_token_storage.dart';
 
 void main() {
   group('the link itself', () {
-    testWidgets('a link with no token shows no form at all',
-        (WidgetTester tester) async {
+    testWidgets('a link with no token shows no form at all', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(tester, token: null);
 
       expect(
@@ -28,14 +29,13 @@ void main() {
       expect(find.text('Request a new link'), findsOneWidget);
     });
 
-    testWidgets('a rejected token takes the form down and offers a new link',
-        (WidgetTester tester) async {
+    testWidgets('a rejected token takes the form down and offers a new link', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
-          resetPasswordError: const UnauthorizedError(
-            message: 'Token expired',
-          ),
+          resetPasswordError: const UnauthorizedError(message: 'Token expired'),
         ),
       );
 
@@ -54,8 +54,9 @@ void main() {
       expect(find.byType(ForgotPasswordScreen), findsOneWidget);
     });
 
-    testWidgets('a 404 on the token reads the same as an expired one',
-        (WidgetTester tester) async {
+    testWidgets('a 404 on the token reads the same as an expired one', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
@@ -75,8 +76,9 @@ void main() {
   });
 
   group('form validation', () {
-    testWidgets('an empty form is rejected before any request goes out',
-        (WidgetTester tester) async {
+    testWidgets('an empty form is rejected before any request goes out', (
+      WidgetTester tester,
+    ) async {
       final FakeAuthRepository auth = FakeAuthRepository();
       await _pumpReset(tester, auth: auth);
 
@@ -87,8 +89,9 @@ void main() {
       expect(auth.resetPasswordCallCount, 0);
     });
 
-    testWidgets('a short password is rejected before any request goes out',
-        (WidgetTester tester) async {
+    testWidgets('a short password is rejected before any request goes out', (
+      WidgetTester tester,
+    ) async {
       final FakeAuthRepository auth = FakeAuthRepository();
       await _pumpReset(tester, auth: auth);
 
@@ -99,8 +102,9 @@ void main() {
       expect(auth.resetPasswordCallCount, 0);
     });
 
-    testWidgets('a mistyped confirmation is caught client-side',
-        (WidgetTester tester) async {
+    testWidgets('a mistyped confirmation is caught client-side', (
+      WidgetTester tester,
+    ) async {
       final FakeAuthRepository auth = FakeAuthRepository();
       await _pumpReset(tester, auth: auth);
 
@@ -115,8 +119,9 @@ void main() {
       expect(auth.resetPasswordCallCount, 0);
     });
 
-    testWidgets('the strength meter tracks what has been typed',
-        (WidgetTester tester) async {
+    testWidgets('the strength meter tracks what has been typed', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(tester);
 
       await tester.enterText(_passwordField, 'password');
@@ -130,8 +135,9 @@ void main() {
   });
 
   group('a successful reset', () {
-    testWidgets('sends the token, ends the session, and lands on /login',
-        (WidgetTester tester) async {
+    testWidgets('sends the token, ends the session, and lands on /login', (
+      WidgetTester tester,
+    ) async {
       final FakeTokenStorage storage = FakeTokenStorage(
         accessToken: 'access',
         refreshToken: 'refresh',
@@ -165,8 +171,9 @@ void main() {
   });
 
   group('server-side rejections', () {
-    testWidgets("a rejected password shows the API's own wording",
-        (WidgetTester tester) async {
+    testWidgets("a rejected password shows the API's own wording", (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
@@ -191,13 +198,15 @@ void main() {
       expect(_passwordField, findsOneWidget);
     });
 
-    testWidgets('a 400 with no field list still shows what the API said',
-        (WidgetTester tester) async {
+    testWidgets('a 400 with no field list still shows what the API said', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
-          resetPasswordError: const UnknownError(
+          resetPasswordError: const ValidationError(
             message: 'Password must contain a number',
+            fieldErrors: <String>[],
             statusCode: 400,
           ),
         ),
@@ -211,8 +220,9 @@ void main() {
       expect(_passwordField, findsOneWidget);
     });
 
-    testWidgets('a 429 counts down and blocks submission',
-        (WidgetTester tester) async {
+    testWidgets('a 429 counts down and blocks submission', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
@@ -235,8 +245,9 @@ void main() {
       expect(_submitButton(tester).onPressed, isNotNull);
     });
 
-    testWidgets('an offline attempt keeps the form and says why',
-        (WidgetTester tester) async {
+    testWidgets('an offline attempt keeps the form and says why', (
+      WidgetTester tester,
+    ) async {
       await _pumpReset(
         tester,
         auth: FakeAuthRepository(
@@ -257,10 +268,14 @@ void main() {
   });
 }
 
-final Finder _passwordField =
-    find.widgetWithText(TextFormField, 'New password');
-final Finder _confirmField =
-    find.widgetWithText(TextFormField, 'Confirm new password');
+final Finder _passwordField = find.widgetWithText(
+  TextFormField,
+  'New password',
+);
+final Finder _confirmField = find.widgetWithText(
+  TextFormField,
+  'Confirm new password',
+);
 
 /// Boots the app and follows the deep link to `/reset-password`. The route is
 /// exempt from the authenticated redirect (PRD §5.1.4), so this works with or
@@ -287,7 +302,9 @@ Future<ProviderContainer> _pumpReset(
   );
   await tester.pumpAndSettle();
 
-  container.read(routerProvider).go(
+  container
+      .read(routerProvider)
+      .go(
         token == null
             ? AppRoutes.resetPassword
             : '${AppRoutes.resetPassword}?${AppRoutes.resetTokenParam}=$token',

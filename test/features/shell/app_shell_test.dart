@@ -9,19 +9,28 @@ import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/classes/data/teacher_assignment_repository.dart';
 import 'package:smart_teacher_mobile/src/features/classes/presentation/my_classes_screen.dart';
+import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/library_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_controller.dart';
 import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_view.dart';
+import 'package:smart_teacher_mobile/src/features/roster/data/section_repository.dart';
+import 'package:smart_teacher_mobile/src/features/roster/data/student_repository.dart';
 import 'package:smart_teacher_mobile/src/features/roster/presentation/roster_screen.dart';
+import 'package:smart_teacher_mobile/src/features/roster/presentation/widgets/student_card.dart';
 import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 
 import '../../support/fake_auth_repository.dart';
+import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
+import '../../support/fake_section_repository.dart';
+import '../../support/fake_student_repository.dart';
+import '../../support/fake_teacher_assignment_repository.dart';
 import '../../support/fake_token_storage.dart';
 
 void main() {
@@ -49,8 +58,9 @@ void main() {
   });
 
   group('teacher shell', () {
-    testWidgets('renders the three teacher tabs and opens on My Classes',
-        (WidgetTester tester) async {
+    testWidgets('renders the three teacher tabs and opens on My Classes', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(tester, role: UserRole.teacher);
 
       expect(_destinationLabels(tester), <String>[
@@ -63,43 +73,52 @@ void main() {
       expect(find.widgetWithText(AppBar, 'My Classes'), findsOneWidget);
     });
 
-    testWidgets('tapping through the tabs swaps the body',
-        (WidgetTester tester) async {
+    testWidgets('tapping through the tabs swaps the body', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(tester, role: UserRole.teacher);
 
       await _tapTab(tester, 'Roster');
       expect(find.widgetWithText(AppBar, 'Roster'), findsOneWidget);
-      expect(find.textContaining('Search and browse the students'),
-          findsOneWidget);
+      // The roster's own states are covered in test/features/roster/ — here it
+      // only has to be the thing the tab swapped to.
+      expect(find.byType(RosterScreen), findsOneWidget);
+      expect(find.byType(StudentCard), findsOneWidget);
 
       await _tapTab(tester, 'Library');
       expect(find.widgetWithText(AppBar, 'Library'), findsOneWidget);
-      expect(
-        find.textContaining('Browse the curricula'),
-        findsOneWidget,
-      );
+      // The library's own states are covered in test/features/library/ — here
+      // it only has to be the thing the tab swapped to.
+      expect(find.text('Mathematics'), findsOneWidget);
 
       await _tapTab(tester, 'My Classes');
       expect(find.widgetWithText(AppBar, 'My Classes'), findsOneWidget);
     });
 
-    testWidgets('has no Profile tab, but reaches the profile from the app bar',
-        (WidgetTester tester) async {
-      await _pumpShell(tester, role: UserRole.teacher, name: 'Asha Rao');
+    testWidgets(
+      'has no Profile tab, but reaches the profile from the app bar',
+      (WidgetTester tester) async {
+        await _pumpShell(tester, role: UserRole.teacher, name: 'Asha Rao');
 
-      expect(_destinationLabels(tester), isNot(contains('Profile')));
+        expect(_destinationLabels(tester), isNot(contains('Profile')));
 
-      await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithIcon(IconButton, ShellTab.profile.icon),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ProfileScreen), findsOneWidget);
-      expect(find.text('Asha Rao'), findsOneWidget);
-    });
+        expect(find.byType(ProfileScreen), findsOneWidget);
+        expect(find.text('Asha Rao'), findsOneWidget);
+      },
+    );
 
-    testWidgets('sign-out stays reachable for a teacher',
-        (WidgetTester tester) async {
-      final ProviderContainer container =
-          await _pumpShell(tester, role: UserRole.teacher);
+    testWidgets('sign-out stays reachable for a teacher', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpShell(
+        tester,
+        role: UserRole.teacher,
+      );
 
       await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
       await tester.pumpAndSettle();
@@ -112,8 +131,9 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('no student-only tab is built at all',
-        (WidgetTester tester) async {
+    testWidgets('no student-only tab is built at all', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(tester, role: UserRole.teacher);
 
       // skipOffstage: false, because the shell's IndexedStack keeps the
@@ -127,8 +147,9 @@ void main() {
   });
 
   group('student shell', () {
-    testWidgets('renders Library · Profile and opens on Library',
-        (WidgetTester tester) async {
+    testWidgets('renders Library · Profile and opens on Library', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(tester, role: UserRole.student);
 
       expect(_destinationLabels(tester), <String>['Library', 'Profile']);
@@ -137,13 +158,10 @@ void main() {
       expect(find.byType(RosterScreen), findsNothing);
     });
 
-    testWidgets('the Profile tab shows the profile inline, with one app bar',
-        (WidgetTester tester) async {
-      await _pumpShell(
-        tester,
-        role: UserRole.student,
-        name: 'Ravi Kumar',
-      );
+    testWidgets('the Profile tab shows the profile inline, with one app bar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpShell(tester, role: UserRole.student, name: 'Ravi Kumar');
 
       await _tapTab(tester, 'Profile');
 
@@ -155,8 +173,10 @@ void main() {
     });
 
     testWidgets('signs out from the Profile tab', (WidgetTester tester) async {
-      final ProviderContainer container =
-          await _pumpShell(tester, role: UserRole.student);
+      final ProviderContainer container = await _pumpShell(
+        tester,
+        role: UserRole.student,
+      );
 
       await _tapTab(tester, 'Profile');
       await _tapSignOut(tester);
@@ -168,8 +188,9 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('there is no profile app-bar action — Profile is a tab',
-        (WidgetTester tester) async {
+    testWidgets('there is no profile app-bar action — Profile is a tab', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(tester, role: UserRole.student);
 
       expect(
@@ -180,8 +201,9 @@ void main() {
   });
 
   group('degraded shell', () {
-    testWidgets('an unrecognised role still gets a usable shell',
-        (WidgetTester tester) async {
+    testWidgets('an unrecognised role still gets a usable shell', (
+      WidgetTester tester,
+    ) async {
       final ProviderContainer container = await _pumpShell(
         tester,
         // What MeEntity falls back to for a role this build doesn't render.
@@ -203,8 +225,9 @@ void main() {
   });
 
   group('role not yet known', () {
-    testWidgets('a failed /users/me offers a retry and a way out',
-        (WidgetTester tester) async {
+    testWidgets('a failed /users/me offers a retry and a way out', (
+      WidgetTester tester,
+    ) async {
       final FakeProfileRepository profile = FakeProfileRepository(
         error: const NetworkError(message: 'Could not reach the server.'),
       );
@@ -223,12 +246,16 @@ void main() {
       expect(_destinationLabels(tester), <String>['Library', 'Profile']);
     });
 
-    testWidgets('the tab set follows the role a refresh returns',
-        (WidgetTester tester) async {
-      final FakeProfileRepository profile =
-          FakeProfileRepository(user: buildMe(role: UserRole.teacher));
-      final ProviderContainer container =
-          await _pumpShell(tester, profile: profile);
+    testWidgets('the tab set follows the role a refresh returns', (
+      WidgetTester tester,
+    ) async {
+      final FakeProfileRepository profile = FakeProfileRepository(
+        user: buildMe(role: UserRole.teacher),
+      );
+      final ProviderContainer container = await _pumpShell(
+        tester,
+        profile: profile,
+      );
 
       // Sitting on the third tab, which the student shell doesn't have — the
       // selection has to be clamped rather than blow up on rebuild.
@@ -245,8 +272,9 @@ void main() {
   });
 
   group('suspended school (PRD §5.2)', () {
-    testWidgets('replaces the whole shell, tab bar included',
-        (WidgetTester tester) async {
+    testWidgets('replaces the whole shell, tab bar included', (
+      WidgetTester tester,
+    ) async {
       await _pumpShell(
         tester,
         profile: FakeProfileRepository(
@@ -261,14 +289,18 @@ void main() {
       expect(find.textContaining('Springfield High'), findsOneWidget);
     });
 
-    testWidgets('takes over an already-open shell mid-session',
-        (WidgetTester tester) async {
-      final ProviderContainer container =
-          await _pumpShell(tester, role: UserRole.teacher);
+    testWidgets('takes over an already-open shell mid-session', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpShell(
+        tester,
+        role: UserRole.teacher,
+      );
       expect(find.byType(NavigationBar), findsOneWidget);
 
-      final SchoolSuspensionController suspension =
-          container.read(schoolSuspensionProvider.notifier);
+      final SchoolSuspensionController suspension = container.read(
+        schoolSuspensionProvider.notifier,
+      );
       suspension.reportSuspendedForbidden();
       suspension.reportSuspendedForbidden();
       await tester.pumpAndSettle();
@@ -277,8 +309,9 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
     });
 
-    testWidgets('signs out from the suspended shell',
-        (WidgetTester tester) async {
+    testWidgets('signs out from the suspended shell', (
+      WidgetTester tester,
+    ) async {
       final ProviderContainer container = await _pumpShell(
         tester,
         profile: FakeProfileRepository(
@@ -323,6 +356,18 @@ Future<ProviderContainer> _pumpShell(
               user: buildMe(role: role ?? UserRole.teacher, name: name),
             ),
       ),
+      // Both shells have a Library tab, and an IndexedStack builds every tab
+      // up front — so without this the real repository would go to the network
+      // in every test in this file.
+      curriculumRepositoryProvider.overrideWithValue(
+        FakeCurriculumRepository(),
+      ),
+      // Same reason, for the teacher shell's My Classes and Roster tabs.
+      teacherAssignmentRepositoryProvider.overrideWithValue(
+        FakeTeacherAssignmentRepository(),
+      ),
+      studentRepositoryProvider.overrideWithValue(FakeStudentRepository()),
+      sectionRepositoryProvider.overrideWithValue(FakeSectionRepository()),
     ],
   );
   addTearDown(container.dispose);
@@ -362,7 +407,7 @@ Future<void> _tapTab(WidgetTester tester, String label) async {
 /// The profile's sign-out button sits below the fold on the test surface —
 /// scroll it in rather than tapping at an offset that misses.
 Future<void> _tapSignOut(WidgetTester tester) async {
-  final Finder button = find.widgetWithText(OutlinedButton, 'Sign out');
+  final Finder button = find.widgetWithText(FilledButton, 'Sign out');
   await tester.ensureVisible(button);
   await tester.pumpAndSettle();
   await tester.tap(button);

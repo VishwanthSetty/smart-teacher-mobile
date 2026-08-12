@@ -9,13 +9,21 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/classes/data/teacher_assignment_repository.dart';
+import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
+import 'package:smart_teacher_mobile/src/features/roster/data/section_repository.dart';
+import 'package:smart_teacher_mobile/src/features/roster/data/student_repository.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/current_user_controller.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 
 import '../../support/fake_auth_repository.dart';
+import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
+import '../../support/fake_section_repository.dart';
+import '../../support/fake_student_repository.dart';
+import '../../support/fake_teacher_assignment_repository.dart';
 import '../../support/fake_token_storage.dart';
 
 void main() {
@@ -393,6 +401,14 @@ Future<ProviderContainer> _pumpLogin(
       authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
       profileRepositoryProvider
           .overrideWithValue(profile ?? FakeProfileRepository()),
+      // A successful login lands on the shell, whose IndexedStack builds every
+      // tab up front — without these, each one would go to the network.
+      curriculumRepositoryProvider.overrideWithValue(FakeCurriculumRepository()),
+      teacherAssignmentRepositoryProvider.overrideWithValue(
+        FakeTeacherAssignmentRepository(),
+      ),
+      studentRepositoryProvider.overrideWithValue(FakeStudentRepository()),
+      sectionRepositoryProvider.overrideWithValue(FakeSectionRepository()),
     ],
   );
   addTearDown(container.dispose);

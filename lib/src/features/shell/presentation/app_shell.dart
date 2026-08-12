@@ -71,9 +71,8 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return profile.when(
       data: _buildShell,
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (Object error, StackTrace _) => _RoleUnavailable(
         error: AppError.from(error),
         onRetry: () => ref.read(profileControllerProvider.notifier).refresh(),
@@ -108,9 +107,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       body: SafeArea(
         child: IndexedStack(
           index: index,
-          children: <Widget>[
-            for (final ShellTab tab in tabs) _bodyFor(tab),
-          ],
+          children: <Widget>[for (final ShellTab tab in tabs) _bodyFor(tab)],
         ),
       ),
       // A one-tab shell gets no tab bar: `NavigationBar` asserts on fewer than
@@ -141,11 +138,11 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// Exhaustive over [ShellTab]: a new destination is an analyzer error here
   /// until it has something to render.
   Widget _bodyFor(ShellTab tab) => switch (tab) {
-        ShellTab.myClasses => const MyClassesScreen(),
-        ShellTab.roster => const RosterScreen(),
-        ShellTab.library => const LibraryScreen(),
-        ShellTab.profile => const ProfileView(),
-      };
+    ShellTab.myClasses => const MyClassesScreen(),
+    ShellTab.roster => const RosterScreen(),
+    ShellTab.library => const LibraryScreen(),
+    ShellTab.profile => const ProfileView(),
+  };
 }
 
 /// Shown when `GET /users/me` failed on a restored session, so there is no
@@ -188,7 +185,7 @@ class _RoleUnavailable extends StatelessWidget {
                   ),
                   const SizedBox(height: AppConstants.spacingMd),
                   Text(
-                    error.message,
+                    error.displayMessage,
                     style: theme.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),

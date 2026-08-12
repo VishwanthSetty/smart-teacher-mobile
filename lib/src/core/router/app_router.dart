@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/library/domain/content_node_entity.dart';
+import '../../features/library/presentation/content_item_stub_screen.dart';
+import '../../features/library/presentation/curriculum_tree_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -22,6 +25,25 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String profile = '/profile';
+
+  /// The curriculum tree (PRD §5.4.2) and the stub player/reader it hands off
+  /// to. Parameterised, so they are built with the `*Path` helpers below rather
+  /// than interpolated at the call site.
+  static const String curriculumTree = '/curricula/:$idParam/tree';
+  static const String video = '/videos/:$idParam';
+  static const String document = '/documents/:$idParam';
+
+  /// The path parameter shared by all three: the record's id.
+  static const String idParam = 'id';
+
+  static String curriculumTreePath(String curriculumId) =>
+      '/curricula/${Uri.encodeComponent(curriculumId)}/tree';
+
+  static String videoPath(String videoId) =>
+      '/videos/${Uri.encodeComponent(videoId)}';
+
+  static String documentPath(String documentId) =>
+      '/documents/${Uri.encodeComponent(documentId)}';
 
   /// Query parameter carrying the emailed reset token into
   /// [resetPassword] (PRD §5.1.4; the deep-link scheme itself is the open
@@ -124,6 +146,40 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.profile,
         builder: (BuildContext context, GoRouterState state) =>
             const ProfileScreen(),
+      ),
+      // The tree and its two stub leaves (§5.4.2). Pushed over the shell
+      // rather than nested in it: they are a drill-down out of the Library
+      // tab, and the tab bar has nothing to offer while you are inside one.
+      //
+      // Each takes its label through `extra` — a nicety from the screen that
+      // pushed it, not a dependency. `extra` does not survive a deep link or a
+      // process restart, so every one of these screens falls back to a title
+      // it can derive on its own.
+      GoRoute(
+        path: AppRoutes.curriculumTree,
+        builder: (BuildContext context, GoRouterState state) =>
+            CurriculumTreeScreen(
+          curriculumId: state.pathParameters[AppRoutes.idParam] ?? '',
+          title: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.video,
+        builder: (BuildContext context, GoRouterState state) =>
+            ContentItemStubScreen(
+          itemId: state.pathParameters[AppRoutes.idParam] ?? '',
+          kind: ContentItemKind.video,
+          title: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.document,
+        builder: (BuildContext context, GoRouterState state) =>
+            ContentItemStubScreen(
+          itemId: state.pathParameters[AppRoutes.idParam] ?? '',
+          kind: ContentItemKind.document,
+          title: state.extra as String?,
+        ),
       ),
     ],
     errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(

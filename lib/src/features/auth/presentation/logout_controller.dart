@@ -7,6 +7,9 @@ import '../../../core/session/session_controller.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_repository.dart';
 
+/// Which server-side sessions a logout revokes (PRD §5.1.3).
+enum LogoutScope { thisDevice, allDevices }
+
 /// Signing out (PRD §5.1.3).
 ///
 /// Stateless on purpose — unlike login there is no failure the user can act
@@ -23,22 +26,30 @@ class LogoutController {
   final Ref _ref;
 
   /// Completes once the local session is gone. The network revoke may still
-  /// be in flight at that point, by design.
-  Future<void> logout() async {
+  /// be in flight at that point, by design. [LogoutScope.thisDevice] is the
+  /// default and sends the current refresh token; [LogoutScope.allDevices]
+  /// omits it, which is the API's instruction to revoke every session.
+  Future<void> logout({LogoutScope scope = LogoutScope.thisDevice}) async {
     // Read before clearing: the revoke needs a token pair that is about to
     // stop existing locally.
     final ({String? accessToken, String? refreshToken}) tokens =
         await _readTokens();
 
-    if (tokens.refreshToken != null) {
+    final String? refreshToken = switch (scope) {
+      LogoutScope.thisDevice => tokens.refreshToken,
+      LogoutScope.allDevices => null,
+    };
+    final bool canRevoke = switch (scope) {
+      LogoutScope.thisDevice => refreshToken != null,
+      LogoutScope.allDevices => tokens.accessToken != null,
+    };
+
+    if (canRevoke) {
       // Deliberately not awaited — §5.1.3 forbids blocking the logout UX on
       // this round-trip. Failures are swallowed: the local session is being
       // torn down either way, and the server-side token expires on its own.
       unawaited(
-        _revoke(
-          refreshToken: tokens.refreshToken!,
-          accessToken: tokens.accessToken,
-        ),
+        _revoke(refreshToken: refreshToken, accessToken: tokens.accessToken),
       );
     }
 
@@ -60,14 +71,13 @@ class LogoutController {
   }
 
   Future<void> _revoke({
-    required String refreshToken,
+    required String? refreshToken,
     required String? accessToken,
   }) async {
     try {
-      await _ref.read(authRepositoryProvider).logout(
-            refreshToken: refreshToken,
-            accessToken: accessToken,
-          );
+      await _ref
+          .read(authRepositoryProvider)
+          .logout(refreshToken: refreshToken, accessToken: accessToken);
     } on AppError {
       // Nothing to show and nothing to retry — see logout()'s contract.
     }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/school_suspension_controller.dart';
+import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../auth/presentation/logout_controller.dart';
 import '../domain/me_entity.dart';
@@ -55,13 +56,14 @@ class ProfileView extends ConsumerWidget {
         data: (MeEntity user) => _ProfileBody(
           user: user,
           onSignOut: () => signOut(ref),
+          onSignOutEverywhere: () =>
+              unawaited(_confirmSignOutEverywhere(context, ref)),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace _) => _ProfileError(
+        error: (Object error, StackTrace _) => ErrorRetryView(
           error: AppError.from(error),
-          onRetry: () => unawaited(
-            ref.read(profileControllerProvider.notifier).refresh(),
-          ),
+          onRetry: () =>
+              unawaited(ref.read(profileControllerProvider.notifier).refresh()),
         ),
       ),
     );
@@ -73,14 +75,51 @@ class ProfileView extends ConsumerWidget {
 /// Shared with the shell, which offers sign-out on its own failure state for
 /// the same reason this screen does — it is the one action always available
 /// when nothing else in the app works.
-void signOut(WidgetRef ref) =>
-    unawaited(ref.read(logoutControllerProvider).logout());
+void signOut(WidgetRef ref, {LogoutScope scope = LogoutScope.thisDevice}) =>
+    unawaited(ref.read(logoutControllerProvider).logout(scope: scope));
+
+Future<void> _confirmSignOutEverywhere(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final bool confirmed =
+      await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: const Text('Sign out everywhere?'),
+          content: const Text(
+            'This will sign you out on this device and every other device '
+            'where your account is currently signed in.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sign out everywhere'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
+  if (confirmed && context.mounted) {
+    signOut(ref, scope: LogoutScope.allDevices);
+  }
+}
 
 class _ProfileBody extends StatelessWidget {
-  const _ProfileBody({required this.user, required this.onSignOut});
+  const _ProfileBody({
+    required this.user,
+    required this.onSignOut,
+    required this.onSignOutEverywhere,
+  });
 
   final MeEntity user;
   final VoidCallback onSignOut;
+  final VoidCallback onSignOutEverywhere;
 
   @override
   Widget build(BuildContext context) {
@@ -127,10 +166,16 @@ class _ProfileBody extends StatelessWidget {
           value: user.email,
         ),
         const SizedBox(height: AppConstants.spacingXl),
-        OutlinedButton.icon(
+        FilledButton.icon(
           onPressed: onSignOut,
           icon: const Icon(Icons.logout),
           label: const Text('Sign out'),
+        ),
+        const SizedBox(height: AppConstants.spacingSm),
+        TextButton.icon(
+          onPressed: onSignOutEverywhere,
+          icon: const Icon(Icons.devices_outlined),
+          label: const Text('Sign out everywhere'),
         ),
       ],
     );
@@ -222,58 +267,4 @@ class _DetailTile extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The failure state for a profile that could not be loaded at all — i.e. the
-/// restored-session case, since a cached profile means there is something to
-/// show even when a refresh fails.
-///
-/// A suspended school never reaches here: it is caught above and replaced by
-/// [SchoolSuspendedView].
-class _ProfileError extends StatelessWidget {
-  const _ProfileError({required this.error, required this.onRetry});
-
-  final AppError error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppConstants.spacingLg),
-      children: <Widget>[
-        const SizedBox(height: AppConstants.spacingXl),
-        Icon(
-          _icon,
-          size: 40,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: AppConstants.spacingMd),
-        Text(
-          error.message,
-          style: theme.textTheme.bodyLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppConstants.spacingLg),
-        Center(
-          child: FilledButton.tonal(
-            onPressed: onRetry,
-            child: const Text('Try again'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Exhaustive over [AppError] — a new variant surfaces here as an analyzer
-  /// error rather than silently picking the generic icon (§6.3).
-  IconData get _icon => switch (error) {
-        NetworkError() => Icons.wifi_off_outlined,
-        UnauthorizedError() || ForbiddenError() => Icons.block_outlined,
-        NotFoundError() => Icons.search_off_outlined,
-        RateLimitedError() => Icons.timer_outlined,
-        ValidationError() || UnknownError() => Icons.error_outline,
-      };
 }

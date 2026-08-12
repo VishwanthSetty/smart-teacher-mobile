@@ -19,17 +19,18 @@ abstract class AuthRepository {
     required String schoolSlug,
   });
 
-  /// `POST /auth/logout` (PRD §5.1.3), revoking [refreshToken] — this
-  /// device's session only. The token pair is passed in rather than read from
-  /// storage because the caller clears storage *immediately*, without waiting
-  /// for this call: [accessToken] is attached explicitly so the request still
-  /// authenticates after the keystore is empty.
+  /// `POST /auth/logout` (PRD §5.1.3). Passing [refreshToken] revokes only
+  /// that device's session; passing `null` omits the request body and revokes
+  /// every session for the actor. The token pair is passed in rather than read
+  /// from storage because the caller clears storage *immediately*, without
+  /// waiting for this call: [accessToken] is attached explicitly so the
+  /// request still authenticates after the keystore is empty.
   ///
   /// Throws an [AppError] — never a `DioException`. Callers are expected to
   /// swallow it: logout is local-first, and a failed revoke must not keep the
   /// user signed in.
   Future<void> logout({
-    required String refreshToken,
+    required String? refreshToken,
     required String? accessToken,
   });
 
@@ -49,10 +50,7 @@ abstract class AuthRepository {
   /// server-side, so the caller must end the local session too.
   ///
   /// Throws an [AppError] — never a `DioException`.
-  Future<void> resetPassword({
-    required String token,
-    required String password,
-  });
+  Future<void> resetPassword({required String token, required String password});
 }
 
 class DioAuthRepository implements AuthRepository {
@@ -72,15 +70,15 @@ class DioAuthRepository implements AuthRepository {
     required String schoolSlug,
   }) {
     return guardApiCall(() async {
-      final Response<Map<String, dynamic>> response =
-          await _dio.post<Map<String, dynamic>>(
-        loginPath,
-        data: <String, String>{
-          'email': email,
-          'password': password,
-          'schoolSlug': schoolSlug,
-        },
-      );
+      final Response<Map<String, dynamic>> response = await _dio
+          .post<Map<String, dynamic>>(
+            loginPath,
+            data: <String, String>{
+              'email': email,
+              'password': password,
+              'schoolSlug': schoolSlug,
+            },
+          );
 
       return AuthTokens.fromJson(response.data ?? <String, dynamic>{});
     });
@@ -88,16 +86,18 @@ class DioAuthRepository implements AuthRepository {
 
   @override
   Future<void> logout({
-    required String refreshToken,
+    required String? refreshToken,
     required String? accessToken,
   }) {
     return guardApiCall(() async {
       await _dio.post<void>(
         logoutPath,
-        // `refreshToken` present = revoke this device only; omitting it would
-        // revoke every session the user has (PRD §5.1.3), which is not v1
-        // behavior — so it is required here rather than nullable.
-        data: <String, String>{'refreshToken': refreshToken},
+        // `refreshToken` present = this device only. A null `data`, rather
+        // than `{refreshToken: null}` or an empty object, is the API's
+        // explicit "revoke every session" contract (PRD §5.1.3).
+        data: refreshToken == null
+            ? null
+            : <String, String>{'refreshToken': refreshToken},
         // Set explicitly instead of letting AuthInterceptor read the keystore:
         // by the time onRequest runs, logout has already cleared it.
         options: accessToken == null
@@ -143,5 +143,5 @@ class DioAuthRepository implements AuthRepository {
 
 final Provider<AuthRepository> authRepositoryProvider =
     Provider<AuthRepository>(
-  (Ref ref) => DioAuthRepository(ref.watch(dioProvider)),
-);
+      (Ref ref) => DioAuthRepository(ref.watch(dioProvider)),
+    );

@@ -21,8 +21,9 @@ import '../../support/fake_token_storage.dart';
 
 void main() {
   group('profile screen (PRD §5.2)', () {
-    testWidgets('shows name, email, role badge and school name',
-        (WidgetTester tester) async {
+    testWidgets('shows name, email, role badge and school name', (
+      WidgetTester tester,
+    ) async {
       await _pumpProfile(
         tester,
         profile: FakeProfileRepository(
@@ -40,8 +41,9 @@ void main() {
       expect(find.text('Springfield High'), findsOneWidget);
     });
 
-    testWidgets('renders the student role for a student',
-        (WidgetTester tester) async {
+    testWidgets('renders the student role for a student', (
+      WidgetTester tester,
+    ) async {
       await _pumpProfile(
         tester,
         profile: FakeProfileRepository(user: buildMe(role: UserRole.student)),
@@ -51,30 +53,35 @@ void main() {
       expect(find.text('Teacher'), findsNothing);
     });
 
-    testWidgets('serves the profile login already fetched, without refetching',
-        (WidgetTester tester) async {
+    testWidgets(
+      'serves the profile login already fetched, without refetching',
+      (WidgetTester tester) async {
+        final FakeProfileRepository profile = FakeProfileRepository(
+          user: buildMe(name: 'Cached User'),
+        );
+        final ProviderContainer container = await _pumpProfile(
+          tester,
+          profile: profile,
+          // Exactly what login leaves behind: the actor already in hand.
+          cachedUser: buildMe(name: 'Cached User'),
+        );
+
+        expect(find.text('Cached User'), findsOneWidget);
+        expect(profile.callCount, 0);
+        expect(container.read(currentUserProvider)?.name, 'Cached User');
+      },
+    );
+
+    testWidgets('fetches when nothing is cached (a restored session)', (
+      WidgetTester tester,
+    ) async {
       final FakeProfileRepository profile = FakeProfileRepository(
-        user: buildMe(name: 'Cached User'),
+        user: buildMe(name: 'Restored User'),
       );
       final ProviderContainer container = await _pumpProfile(
         tester,
         profile: profile,
-        // Exactly what login leaves behind: the actor already in hand.
-        cachedUser: buildMe(name: 'Cached User'),
       );
-
-      expect(find.text('Cached User'), findsOneWidget);
-      expect(profile.callCount, 0);
-      expect(container.read(currentUserProvider)?.name, 'Cached User');
-    });
-
-    testWidgets('fetches when nothing is cached (a restored session)',
-        (WidgetTester tester) async {
-      final FakeProfileRepository profile = FakeProfileRepository(
-        user: buildMe(name: 'Restored User'),
-      );
-      final ProviderContainer container =
-          await _pumpProfile(tester, profile: profile);
 
       expect(profile.callCount, 1);
       expect(find.text('Restored User'), findsOneWidget);
@@ -83,8 +90,9 @@ void main() {
       expect(container.read(currentUserProvider)?.name, 'Restored User');
     });
 
-    testWidgets('pull-to-refresh refetches and repaints',
-        (WidgetTester tester) async {
+    testWidgets('pull-to-refresh refetches and repaints', (
+      WidgetTester tester,
+    ) async {
       final FakeProfileRepository profile = FakeProfileRepository(
         user: buildMe(name: 'Old Name'),
       );
@@ -122,7 +130,7 @@ void main() {
     testWidgets('signs out from here', (WidgetTester tester) async {
       final ProviderContainer container = await _pumpProfile(tester);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Sign out'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
       await tester.pumpAndSettle();
 
       expect(
@@ -134,8 +142,9 @@ void main() {
   });
 
   group('suspended school (PRD §5.2)', () {
-    testWidgets('a SUSPENDED school status replaces the screen',
-        (WidgetTester tester) async {
+    testWidgets('a SUSPENDED school status replaces the screen', (
+      WidgetTester tester,
+    ) async {
       final ProviderContainer container = await _pumpProfile(
         tester,
         profile: FakeProfileRepository(
@@ -150,8 +159,9 @@ void main() {
       expect(container.read(schoolSuspensionProvider), isTrue);
     });
 
-    testWidgets('a suspended 403 on /users/me replaces the screen too',
-        (WidgetTester tester) async {
+    testWidgets('a suspended 403 on /users/me replaces the screen too', (
+      WidgetTester tester,
+    ) async {
       await _pumpProfile(
         tester,
         profile: FakeProfileRepository(
@@ -167,8 +177,9 @@ void main() {
       expect(find.text('Try again'), findsNothing);
     });
 
-    testWidgets('a plain 403 gets the ordinary error state',
-        (WidgetTester tester) async {
+    testWidgets('a plain 403 gets the ordinary error state', (
+      WidgetTester tester,
+    ) async {
       await _pumpProfile(
         tester,
         profile: FakeProfileRepository(
@@ -180,26 +191,30 @@ void main() {
       expect(find.text("You don't have access."), findsOneWidget);
     });
 
-    testWidgets('the repeated-403 pattern takes over an already loaded screen',
-        (WidgetTester tester) async {
-      final ProviderContainer container = await _pumpProfile(tester);
-      expect(find.byType(SchoolSuspendedView), findsNothing);
+    testWidgets(
+      'the repeated-403 pattern takes over an already loaded screen',
+      (WidgetTester tester) async {
+        final ProviderContainer container = await _pumpProfile(tester);
+        expect(find.byType(SchoolSuspendedView), findsNothing);
 
-      // Two suspension-flavoured 403s from calls elsewhere in the app — what
-      // the interceptor reports as the school goes suspended mid-session.
-      final SchoolSuspensionController suspension =
-          container.read(schoolSuspensionProvider.notifier);
-      suspension.reportSuspendedForbidden();
-      await tester.pumpAndSettle();
-      expect(find.byType(SchoolSuspendedView), findsNothing);
+        // Two suspension-flavoured 403s from calls elsewhere in the app — what
+        // the interceptor reports as the school goes suspended mid-session.
+        final SchoolSuspensionController suspension = container.read(
+          schoolSuspensionProvider.notifier,
+        );
+        suspension.reportSuspendedForbidden();
+        await tester.pumpAndSettle();
+        expect(find.byType(SchoolSuspendedView), findsNothing);
 
-      suspension.reportSuspendedForbidden();
-      await tester.pumpAndSettle();
-      expect(find.byType(SchoolSuspendedView), findsOneWidget);
-    });
+        suspension.reportSuspendedForbidden();
+        await tester.pumpAndSettle();
+        expect(find.byType(SchoolSuspendedView), findsOneWidget);
+      },
+    );
 
-    testWidgets('sign-out is reachable from the suspended screen',
-        (WidgetTester tester) async {
+    testWidgets('sign-out is reachable from the suspended screen', (
+      WidgetTester tester,
+    ) async {
       final ProviderContainer container = await _pumpProfile(
         tester,
         profile: FakeProfileRepository(
@@ -235,8 +250,9 @@ Future<ProviderContainer> _pumpProfile(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
       authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-      profileRepositoryProvider
-          .overrideWithValue(profile ?? FakeProfileRepository()),
+      profileRepositoryProvider.overrideWithValue(
+        profile ?? FakeProfileRepository(),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -261,10 +277,6 @@ Future<ProviderContainer> _pumpProfile(
 }
 
 Future<void> _pullToRefresh(WidgetTester tester) async {
-  await tester.fling(
-    find.byType(ListView),
-    const Offset(0, 300),
-    1000,
-  );
+  await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
   await tester.pumpAndSettle();
 }

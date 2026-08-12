@@ -75,7 +75,7 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> logout({
-    required String refreshToken,
+    required String? refreshToken,
     required String? accessToken,
   }) async {
     logoutCallCount++;

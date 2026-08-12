@@ -21,8 +21,9 @@ import '../../support/fake_token_storage.dart';
 
 void main() {
   group('logout (PRD §5.1.3)', () {
-    testWidgets('revokes this device, clears storage, and lands on /login',
-        (WidgetTester tester) async {
+    testWidgets('revokes this device, clears storage, and lands on /login', (
+      WidgetTester tester,
+    ) async {
       final FakeTokenStorage storage = FakeTokenStorage(
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
@@ -52,8 +53,9 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('does not wait for the revoke before signing out',
-        (WidgetTester tester) async {
+    testWidgets('does not wait for the revoke before signing out', (
+      WidgetTester tester,
+    ) async {
       final Completer<void> gate = Completer<void>();
       final FakeTokenStorage storage = FakeTokenStorage(
         accessToken: 'access-token',
@@ -81,8 +83,75 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('a failed revoke still signs the user out',
-        (WidgetTester tester) async {
+    testWidgets('can revoke every session after explicit confirmation', (
+      WidgetTester tester,
+    ) async {
+      final FakeTokenStorage storage = FakeTokenStorage(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final FakeAuthRepository auth = FakeAuthRepository();
+      final ProviderContainer container = await _pumpSignedIn(
+        tester,
+        storage: storage,
+        auth: auth,
+      );
+
+      await _openProfile(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Sign out everywhere'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign out everywhere?'), findsOneWidget);
+      expect(auth.logoutCallCount, 0);
+
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Sign out everywhere'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(auth.logoutCallCount, 1);
+      // Null is deliberate: the repository omits the body, which tells the
+      // API to revoke every session instead of only this refresh token.
+      expect(auth.lastLogoutRefreshToken, isNull);
+      expect(auth.lastLogoutAccessToken, 'access-token');
+      expect(await storage.getRefreshToken(), isNull);
+      expect(
+        container.read(sessionControllerProvider),
+        SessionStatus.unauthenticated,
+      );
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+
+    testWidgets('cancelling sign out everywhere keeps the session', (
+      WidgetTester tester,
+    ) async {
+      final FakeAuthRepository auth = FakeAuthRepository();
+      final ProviderContainer container = await _pumpSignedIn(
+        tester,
+        storage: FakeTokenStorage(
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+        ),
+        auth: auth,
+      );
+
+      await _openProfile(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Sign out everywhere'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(auth.logoutCallCount, 0);
+      expect(
+        container.read(sessionControllerProvider),
+        SessionStatus.authenticated,
+      );
+      expect(find.byType(ProfileScreen), findsOneWidget);
+    });
+
+    testWidgets('a failed revoke still signs the user out', (
+      WidgetTester tester,
+    ) async {
       final FakeTokenStorage storage = FakeTokenStorage(
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
@@ -91,7 +160,9 @@ void main() {
         tester,
         storage: storage,
         auth: FakeAuthRepository(
-          logoutError: const NetworkError(message: 'Could not reach the server.'),
+          logoutError: const NetworkError(
+            message: 'Could not reach the server.',
+          ),
         ),
       );
 
@@ -107,8 +178,9 @@ void main() {
       expect(find.text('Could not reach the server.'), findsNothing);
     });
 
-    testWidgets('an unreadable keystore still signs the user out',
-        (WidgetTester tester) async {
+    testWidgets('an unreadable keystore still signs the user out', (
+      WidgetTester tester,
+    ) async {
       final FakeAuthRepository auth = FakeAuthRepository();
       final ProviderContainer container = await _pumpSignedIn(
         tester,
@@ -177,13 +249,17 @@ Future<ProviderContainer> _pumpSignedIn(
 /// teacher, whose shell (§5.7) has no Profile tab, so the way there is the
 /// shell's app-bar action.
 Future<void> _tapSignOut(WidgetTester tester) async {
-  await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
-  await tester.pumpAndSettle();
-  expect(find.byType(ProfileScreen), findsOneWidget);
+  await _openProfile(tester);
 
-  final Finder button = find.widgetWithText(OutlinedButton, 'Sign out');
+  final Finder button = find.widgetWithText(FilledButton, 'Sign out');
   await tester.ensureVisible(button);
   await tester.pumpAndSettle();
   await tester.tap(button);
   await tester.pumpAndSettle();
+}
+
+Future<void> _openProfile(WidgetTester tester) async {
+  await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
+  await tester.pumpAndSettle();
+  expect(find.byType(ProfileScreen), findsOneWidget);
 }

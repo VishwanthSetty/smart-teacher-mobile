@@ -33,10 +33,7 @@ class ResetPasswordController extends Notifier<ResetPasswordState> {
 
   /// Returns `true` when the password was changed, which is the screen's cue
   /// to route to `/login`.
-  Future<bool> submit({
-    required String token,
-    required String password,
-  }) async {
+  Future<bool> submit({required String token, required String password}) async {
     if (!state.canSubmit) {
       return false;
     }
@@ -44,10 +41,9 @@ class ResetPasswordController extends Notifier<ResetPasswordState> {
     _emit(const ResetPasswordState(isSubmitting: true));
 
     try {
-      await ref.read(authRepositoryProvider).resetPassword(
-            token: token,
-            password: password,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .resetPassword(token: token, password: password);
 
       // Unconditional: whatever this device was holding is revoked. On a
       // signed-out app this is a no-op beyond clearing empty storage.
@@ -74,29 +70,24 @@ class ResetPasswordController extends Notifier<ResetPasswordState> {
   }
 
   ResetPasswordFailure _toFailure(AppError error) => switch (error) {
-        // Nothing distinguishes "expired", "already used" and "forged" — and
-        // nothing should.
-        UnauthorizedError() ||
-        ForbiddenError() ||
-        NotFoundError() =>
-          const InvalidResetLink(),
-        RateLimitedError(retryAfter: final Duration? retryAfter) =>
-          TooManyResetAttempts(retryAfter: retryAfter),
-        ValidationError(
-          message: final String message,
-          fieldErrors: final List<String> fieldErrors,
-        ) =>
-          ResetPasswordRejected(message, fieldErrors),
-        // A `400` with no per-field list — most often the password policy
-        // talking. Show the API's own wording; it knows the rule and the
-        // client doesn't.
-        UnknownError(statusCode: 400, message: final String message) =>
-          ResetPasswordRejected(message, const <String>[]),
-        NetworkError(message: final String message) =>
-          ResetPasswordNetworkFailure(message),
-        UnknownError(message: final String message) =>
-          ResetPasswordUnexpectedFailure(message),
-      };
+    // Nothing distinguishes "expired", "already used" and "forged" — and
+    // nothing should.
+    UnauthorizedError() ||
+    ForbiddenError() ||
+    NotFoundError() => const InvalidResetLink(),
+    RateLimitedError(retryAfter: final Duration? retryAfter) =>
+      TooManyResetAttempts(retryAfter: retryAfter),
+    ValidationError(
+      message: final String message,
+      fieldErrors: final List<String> fieldErrors,
+    ) =>
+      ResetPasswordRejected(message, fieldErrors),
+    NetworkError(message: final String message) => ResetPasswordNetworkFailure(
+      message,
+    ),
+    UnknownError(message: final String message) =>
+      ResetPasswordUnexpectedFailure(message),
+  };
 
   void _emit(ResetPasswordState next) {
     if (ref.mounted) {
@@ -106,7 +97,7 @@ class ResetPasswordController extends Notifier<ResetPasswordState> {
 }
 
 final NotifierProvider<ResetPasswordController, ResetPasswordState>
-    resetPasswordControllerProvider =
+resetPasswordControllerProvider =
     NotifierProvider.autoDispose<ResetPasswordController, ResetPasswordState>(
-  ResetPasswordController.new,
-);
+      ResetPasswordController.new,
+    );

@@ -47,13 +47,16 @@ void main() {
       expect((error as ForbiddenError).isSchoolSuspended, isTrue);
     });
 
-    test('404 maps to NotFoundError', () {
+    test('404 ignores server prose and stays generic', () {
       final AppError error = AppError.fromDioException(
-        _dioError(404, <String, dynamic>{'message': 'Curriculum not found'}),
+        _dioError(404, <String, dynamic>{
+          'message': 'Curriculum exists but is forbidden',
+        }),
       );
 
       expect(error, isA<NotFoundError>());
-      expect(error.message, 'Curriculum not found');
+      expect(error.message, "We couldn't find what you were looking for.");
+      expect(error.message.toLowerCase(), isNot(contains('forbidden')));
     });
 
     test('404 with no body stays generic and implies nothing about access', () {
@@ -77,7 +80,14 @@ void main() {
       );
 
       expect(error, isA<RateLimitedError>());
-      expect((error as RateLimitedError).retryAfter, const Duration(minutes: 2));
+      expect(
+        (error as RateLimitedError).retryAfter,
+        const Duration(minutes: 2),
+      );
+      expect(
+        error.displayMessage,
+        'Too many attempts. Try again in 2 minutes.',
+      );
     });
 
     test('429 without a Retry-After header leaves the hint null', () {
@@ -86,6 +96,7 @@ void main() {
       );
 
       expect((error as RateLimitedError).retryAfter, isNull);
+      expect(error.displayMessage, 'Slow down. Please try again later.');
     });
 
     test('429 ignores a Retry-After given as an HTTP date', () {
@@ -127,14 +138,15 @@ void main() {
       expect(error, isA<ValidationError>());
     });
 
-    test('400 with a plain string message is not a ValidationError', () {
+    test('400 with a plain string stays in the shared validation variant', () {
       final AppError error = AppError.fromDioException(
         _dioError(400, <String, dynamic>{'message': 'Malformed request'}),
       );
 
-      expect(error, isA<UnknownError>());
+      expect(error, isA<ValidationError>());
       expect(error.statusCode, 400);
       expect(error.message, 'Malformed request');
+      expect((error as ValidationError).fieldErrors, isEmpty);
     });
 
     test('500 maps to UnknownError', () {
@@ -249,14 +261,14 @@ void main() {
 
   test('a switch over AppError is exhaustive without a default', () {
     String describe(AppError error) => switch (error) {
-          UnauthorizedError() => 'unauthorized',
-          ForbiddenError() => 'forbidden',
-          NotFoundError() => 'notFound',
-          RateLimitedError() => 'rateLimited',
-          ValidationError() => 'validation',
-          NetworkError() => 'network',
-          UnknownError() => 'unknown',
-        };
+      UnauthorizedError() => 'unauthorized',
+      ForbiddenError() => 'forbidden',
+      NotFoundError() => 'notFound',
+      RateLimitedError() => 'rateLimited',
+      ValidationError() => 'validation',
+      NetworkError() => 'network',
+      UnknownError() => 'unknown',
+    };
 
     expect(describe(const NetworkError(message: 'offline')), 'network');
   });

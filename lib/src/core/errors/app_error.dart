@@ -48,39 +48,39 @@ sealed class AppError implements Exception {
 
     return switch (status) {
       401 => UnauthorizedError(
-          message: body.message ??
-              'Your session has expired. Please sign in again.',
-          errorCode: body.errorCode,
-          cause: exception,
-        ),
+        message:
+            body.message ?? 'Your session has expired. Please sign in again.',
+        errorCode: body.errorCode,
+        cause: exception,
+      ),
       403 => _forbidden(body, exception),
       404 => NotFoundError(
-          // Deliberately generic. The API answers 404 (not 403) for records
-          // the caller may not see, so a permission-flavoured message here
-          // would leak the existence of records (PRD §4, §6.3).
-          message: body.message ?? "We couldn't find what you were looking for.",
-          errorCode: body.errorCode,
-          cause: exception,
-        ),
+        // Deliberately generic. The API answers 404 (not 403) for records
+        // the caller may not see, so a permission-flavoured message here
+        // would leak the existence of records (PRD §4, §6.3).
+        message: "We couldn't find what you were looking for.",
+        errorCode: body.errorCode,
+        cause: exception,
+      ),
       429 => RateLimitedError(
-          message: body.message ?? 'Too many attempts. Please try again later.',
-          retryAfter: _retryAfter(response.headers),
-          errorCode: body.errorCode,
-          cause: exception,
-        ),
-      400 || 422 when body.fieldErrors.isNotEmpty => ValidationError(
-          message: body.message ?? 'Please check the details you entered.',
-          fieldErrors: body.fieldErrors,
-          statusCode: status,
-          errorCode: body.errorCode,
-          cause: exception,
-        ),
+        message: body.message ?? 'Too many attempts. Please try again later.',
+        retryAfter: _retryAfter(response.headers),
+        errorCode: body.errorCode,
+        cause: exception,
+      ),
+      400 || 422 => ValidationError(
+        message: body.message ?? 'Please check the details you entered.',
+        fieldErrors: body.fieldErrors,
+        statusCode: status,
+        errorCode: body.errorCode,
+        cause: exception,
+      ),
       _ => UnknownError(
-          message: body.message ?? 'Something went wrong. Please try again.',
-          statusCode: status,
-          errorCode: body.errorCode,
-          cause: exception,
-        ),
+        message: body.message ?? 'Something went wrong. Please try again.',
+        statusCode: status,
+        errorCode: body.errorCode,
+        cause: exception,
+      ),
     };
   }
 
@@ -88,18 +88,32 @@ sealed class AppError implements Exception {
   /// so callers never have to type-test before mapping. An [AppError] passes
   /// through unchanged; anything else becomes an [UnknownError].
   static AppError from(Object error) => switch (error) {
-        final AppError appError => appError,
-        final DioException dioError => AppError.fromDioException(dioError),
-        _ => UnknownError(
-            message: 'Something went wrong. Please try again.',
-            cause: error,
-          ),
-      };
+    final AppError appError => appError,
+    final DioException dioError => AppError.fromDioException(dioError),
+    _ => UnknownError(
+      message: 'Something went wrong. Please try again.',
+      cause: error,
+    ),
+  };
 
   /// Safe to render directly in the UI: either the API's own message or a
   /// variant-appropriate fallback. Never contains a stack trace or a raw
   /// transport detail.
   final String message;
+
+  /// The shared presentation-safe form of [message]. Rate limits add the
+  /// server's `Retry-After` hint when one exists, and still tell the user to
+  /// retry later when it does not. Endpoint-specific auth flows use their own
+  /// closed failure states, but generic network error views render this value
+  /// so §6.3's `429` behavior cannot drift screen by screen.
+  String get displayMessage => switch (this) {
+    RateLimitedError(
+      message: final String message,
+      retryAfter: final Duration? retryAfter,
+    ) =>
+      _withRetryHint(message, retryAfter),
+    AppError(message: final String message) => message,
+  };
 
   /// HTTP status this came from, for logging and telemetry. Feature code
   /// should switch on the variant instead of comparing this.
@@ -146,11 +160,8 @@ final class ForbiddenError extends AppError {
 /// `404` — the record isn't there, or isn't visible to this caller. Those two
 /// are indistinguishable by design; treat both as "not found".
 final class NotFoundError extends AppError {
-  const NotFoundError({
-    required super.message,
-    super.errorCode,
-    super.cause,
-  }) : super(statusCode: 404);
+  const NotFoundError({required super.message, super.errorCode, super.cause})
+    : super(statusCode: 404);
 }
 
 /// `429` — throttled. [retryAfter] carries the server's `Retry-After` hint
@@ -166,9 +177,10 @@ final class RateLimitedError extends AppError {
   final Duration? retryAfter;
 }
 
-/// `400`/`422` carrying per-field complaints (Nest's `ValidationPipe` returns
-/// these as a list). [fieldErrors] is never empty — a `400` without a list
-/// falls through to [UnknownError].
+/// `400`/`422` payload rejection. Nest's `ValidationPipe` often supplies
+/// per-field complaints as a list, but endpoint-specific rules can send only
+/// a message, so [fieldErrors] may be empty. Both shapes stay in this variant:
+/// presentation must never inspect [AppError.statusCode] to tell them apart.
 final class ValidationError extends AppError {
   const ValidationError({
     required super.message,
@@ -234,8 +246,8 @@ Future<T> guardApiCall<T>(Future<T> Function() request) async {
 /// matching is brittle and should disappear once `apps/api` exposes a stable
 /// code for this case.
 AppError _forbidden(_ApiErrorBody body, DioException exception) {
-  final String haystack =
-      '${body.errorCode ?? ''} ${body.message ?? ''}'.toLowerCase();
+  final String haystack = '${body.errorCode ?? ''} ${body.message ?? ''}'
+      .toLowerCase();
   final bool suspended = haystack.contains('suspend');
 
   return ForbiddenError(
@@ -254,13 +266,13 @@ bool _isTimeout(DioExceptionType type) =>
     type == DioExceptionType.receiveTimeout;
 
 String _networkMessage(DioExceptionType type) => switch (type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout =>
-        'The server took too long to respond. Please try again.',
-      DioExceptionType.cancel => 'The request was cancelled.',
-      _ => 'Could not reach the server. Check your connection.',
-    };
+  DioExceptionType.connectionTimeout ||
+  DioExceptionType.sendTimeout ||
+  DioExceptionType.receiveTimeout =>
+    'The server took too long to respond. Please try again.',
+  DioExceptionType.cancel => 'The request was cancelled.',
+  _ => 'Could not reach the server. Check your connection.',
+};
 
 /// `Retry-After` is defined as either a delay in seconds or an HTTP date.
 /// Only the seconds form is honoured — the date form needs a trustworthy
@@ -271,6 +283,56 @@ Duration? _retryAfter(Headers headers) {
   final int? seconds = raw == null ? null : int.tryParse(raw.trim());
   return seconds == null || seconds < 0 ? null : Duration(seconds: seconds);
 }
+
+String _withRetryHint(String message, Duration? retryAfter) {
+  if (retryAfter == null) {
+    final String normalized = message.toLowerCase();
+    if (normalized.contains('try again') ||
+        normalized.contains('retry') ||
+        normalized.contains('wait')) {
+      return message;
+    }
+    return '${_asSentence(message)} Please try again later.';
+  }
+
+  return '${_asSentence(message)} Try again in ${_formatDuration(retryAfter)}.';
+}
+
+String _asSentence(String message) {
+  final String trimmed = message.trim();
+  if (trimmed.endsWith('.') || trimmed.endsWith('!') || trimmed.endsWith('?')) {
+    return trimmed;
+  }
+  return '$trimmed.';
+}
+
+String _formatDuration(Duration duration) {
+  final int totalSeconds = duration.inSeconds;
+  if (totalSeconds <= 0) {
+    return 'a moment';
+  }
+  if (totalSeconds < 60) {
+    return _unit(totalSeconds, 'second');
+  }
+
+  final int totalMinutes = totalSeconds ~/ 60;
+  final int remainingSeconds = totalSeconds % 60;
+  if (totalMinutes < 60) {
+    final String minutes = _unit(totalMinutes, 'minute');
+    return remainingSeconds == 0
+        ? minutes
+        : '$minutes and ${_unit(remainingSeconds, 'second')}';
+  }
+
+  final int hours = totalMinutes ~/ 60;
+  final int remainingMinutes = totalMinutes % 60;
+  final String hourLabel = _unit(hours, 'hour');
+  return remainingMinutes == 0
+      ? hourLabel
+      : '$hourLabel and ${_unit(remainingMinutes, 'minute')}';
+}
+
+String _unit(int value, String unit) => '$value $unit${value == 1 ? '' : 's'}';
 
 /// The API's `ApiErrorResponse` (Nest's `HttpExceptionFilter`), normalised.
 ///
