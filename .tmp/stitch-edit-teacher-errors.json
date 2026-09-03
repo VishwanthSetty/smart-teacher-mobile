@@ -1,0 +1,7 @@
+{
+  "projectId": "7753021071171110152",
+  "selectedScreenIds": ["d65db444540a4028a9e469bf1e4f0f72"],
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "Correct this Teacher generic error state sheet to follow the teacher design system: no owl, mascot, character, playful face, or childish illustration anywhere. Use only compact geometric blue glyphs for no internet, server error, rate limited, forbidden, and unknown error. Keep neutral professional copy, a Try again action where appropriate, and a visibly disabled action during a Retry-After countdown. Do not add support links or any unrequested route. Use Fredoka headings, Nunito body, blue/neutrals only, 48px minimum targets, and Flutter Material 3 components."
+}

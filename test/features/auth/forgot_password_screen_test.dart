@@ -10,6 +10,7 @@ import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_token_storage.dart';
@@ -220,7 +221,7 @@ void main() {
       await tester.tap(find.text('Back to sign in'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('the login screen can reach this screen',
@@ -282,6 +283,10 @@ Future<ProviderContainer> _pumpForgotPassword(
     container.read(routerProvider).go(AppRoutes.forgotPassword);
     await tester.pumpAndSettle();
     expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+  } else {
+    container.read(routerProvider).go(AppRoutes.login);
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginScreen), findsOneWidget);
   }
 
   return container;
@@ -304,3 +309,4 @@ Future<void> _tapSend(WidgetTester tester) async {
 
 ButtonStyleButton _sendButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
+

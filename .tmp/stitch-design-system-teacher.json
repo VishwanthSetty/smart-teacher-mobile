@@ -1,0 +1,26 @@
+{
+  "projectId": "7753021071171110152",
+  "designSystem": {
+    "displayName": "Smart Teacher Teacher",
+    "theme": {
+      "colorMode": "LIGHT",
+      "colorVariant": "FIDELITY",
+      "customColor": "#2196F3",
+      "overridePrimaryColor": "#2196F3",
+      "overrideSecondaryColor": "#90CAF9",
+      "overrideTertiaryColor": "#0D47A1",
+      "overrideNeutralColor": "#FFFFFF",
+      "headlineFont": "COMFORTAA",
+      "bodyFont": "NUNITO_SANS",
+      "labelFont": "NUNITO_SANS",
+      "roundness": "ROUND_TWELVE",
+      "spacing": {"unit": "4px", "screen": "20px", "cards": "12px"},
+      "typography": {
+        "screen-title": {"fontFamily": "Fredoka", "fontSize": "22px", "fontWeight": "700", "lineHeight": "1.2"},
+        "body": {"fontFamily": "Nunito", "fontSize": "15px", "fontWeight": "400", "lineHeight": "1.45"},
+        "label": {"fontFamily": "Nunito", "fontSize": "15px", "fontWeight": "700", "lineHeight": "1.2"}
+      },
+      "designMd": "# Smart Teacher — Teacher\nMaterial 3 portrait mobile at 390×844. Calm, professional, information-dense teacher surface with no mascot. Use only #FFFFFF, #E3F2FD, #90CAF9, #2196F3, #0D47A1 and neutral text #12263A/#5B6B7B/#93A2B0. Semantic colors only: #2E7D32 success, #F9A825 warning, #D32F2F error. No purple, teal, pink, orange, or decorative green. Differentiate subjects with icons and blue tint tiles (#E3F2FD, #D0E7FB, #B8DBF9, #A1CFF7, #90CAF9), never new hues. Fredoka headings and Nunito UI/body. Cards 20px radius, sheets 28px top radius, buttons 16px, chips fully rounded, 4pt spacing, 20px screen padding, 12px gaps, soft blue shadow rgba(13,71,161,.08) 0 8px 24px. White page. Flat rounded-vector illustrations only when useful, never photos. Touch targets at least 48×48 and body text at least 15px. No progress, percentages, streaks, points, XP, badges, leaderboards, bookmarks, or continue-watching UI. Motion: smooth, restrained 180–220ms with standard easing; preserve scroll position between tabs and respect reduced motion."
+    }
+  }
+}

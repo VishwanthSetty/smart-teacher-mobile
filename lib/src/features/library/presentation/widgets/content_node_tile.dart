@@ -123,9 +123,7 @@ class ContentNodeTile extends StatelessWidget {
 
 /// A playable or readable leaf (PRD §5.4.2).
 ///
-/// Tapping hands off to the stub player/reader — the real ones are out of
-/// scope this phase, but the row is still tappable, because a video row that
-/// does nothing reads as broken in a way a "coming soon" screen does not.
+/// Tapping hands off to the native player or the still-stubbed reader.
 class ContentItemRow extends StatelessWidget {
   const ContentItemRow({
     required this.item,
@@ -145,6 +143,9 @@ class ContentItemRow extends StatelessWidget {
     final String? subtitle = _subtitle;
 
     return ListTile(
+      // PRD §B1: this is deliberately static. `posterUrl` is available only
+      // after minting a playback token, which belongs to the opened player and
+      // must never be requested once per visible list row.
       leading: Icon(
         switch (kind) {
           ContentItemKind.video => Icons.play_circle_outline,

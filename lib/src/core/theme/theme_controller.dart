@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Holds the user's selected [ThemeMode] for the whole app.
 ///
-/// This is intentionally in-memory only. When persistence is needed, swap the
-/// implementation to read/write `shared_preferences` in [build] and [set]
-/// without touching any consumer.
+/// Light is the deliberate default, regardless of the device setting. Users
+/// can opt into dark mode or following the system from their profile.
 class ThemeController extends Notifier<ThemeMode> {
   @override
-  ThemeMode build() => ThemeMode.system;
+  ThemeMode build() => ThemeMode.light;
 
   void set(ThemeMode mode) => state = mode;
 

@@ -7,9 +7,11 @@ import 'package:smart_teacher_mobile/src/core/router/app_router.dart';
 import 'package:smart_teacher_mobile/src/core/session/school_suspension_controller.dart';
 import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
+import 'package:smart_teacher_mobile/src/core/theme/theme_controller.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/current_user_controller.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
@@ -41,6 +43,27 @@ void main() {
       expect(find.text('Springfield High'), findsOneWidget);
     });
 
+    testWidgets('uses light theme by default and changes it from profile', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpProfile(tester);
+
+      expect(container.read(themeControllerProvider), ThemeMode.light);
+      expect(find.text('Theme'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+
+      await tester.tap(find.byType(DropdownButton<ThemeMode>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dark').last);
+      await tester.pumpAndSettle();
+
+      expect(container.read(themeControllerProvider), ThemeMode.dark);
+      expect(
+        tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+        ThemeMode.dark,
+      );
+    });
+
     testWidgets('renders the student role for a student', (
       WidgetTester tester,
     ) async {
@@ -51,6 +74,32 @@ void main() {
 
       expect(find.text('Student'), findsOneWidget);
       expect(find.text('Teacher'), findsNothing);
+    });
+
+    testWidgets('shows the active class and roll number for a student', (
+      WidgetTester tester,
+    ) async {
+      await _pumpProfile(
+        tester,
+        profile: FakeProfileRepository(
+          user: buildMe(
+            role: UserRole.student,
+            enrollment: const StudentEnrollmentSummary(
+              id: 'enrollment-1',
+              sectionId: 'section-1',
+              sectionName: 'A',
+              sectionLabel: 'Grade 5 - A',
+              gradeLevelId: 'grade-5',
+              gradeLevelName: 'Grade 5',
+              gradeLevelRank: 5,
+              rollNumber: '12',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Grade 5 - A'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
     });
 
     testWidgets(
@@ -137,7 +186,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 
@@ -229,7 +278,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
       // The flag clears with the session, so the next user starts clean.
       expect(container.read(schoolSuspensionProvider), isFalse);
     });
@@ -280,3 +329,4 @@ Future<void> _pullToRefresh(WidgetTester tester) async {
   await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
   await tester.pumpAndSettle();
 }
+

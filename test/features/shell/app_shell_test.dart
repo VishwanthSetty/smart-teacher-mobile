@@ -9,6 +9,7 @@ import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/classes/data/teacher_assignment_repository.dart';
 import 'package:smart_teacher_mobile/src/features/classes/presentation/my_classes_screen.dart';
 import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
@@ -128,7 +129,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('no student-only tab is built at all', (
@@ -185,7 +186,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('there is no profile app-bar action — Profile is a tab', (
@@ -326,7 +327,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 }

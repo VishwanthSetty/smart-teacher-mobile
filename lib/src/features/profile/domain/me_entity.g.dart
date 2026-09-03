@@ -32,6 +32,32 @@ const _$SchoolStatusEnumMap = {
   SchoolStatus.unknown: 'unknown',
 };
 
+_StudentEnrollmentSummary _$StudentEnrollmentSummaryFromJson(
+  Map<String, dynamic> json,
+) => _StudentEnrollmentSummary(
+  id: json['id'] as String,
+  sectionId: json['sectionId'] as String,
+  sectionName: json['sectionName'] as String,
+  sectionLabel: json['sectionLabel'] as String,
+  gradeLevelId: json['gradeLevelId'] as String,
+  gradeLevelName: json['gradeLevelName'] as String,
+  gradeLevelRank: (json['gradeLevelRank'] as num).toInt(),
+  rollNumber: json['rollNumber'] as String?,
+);
+
+Map<String, dynamic> _$StudentEnrollmentSummaryToJson(
+  _StudentEnrollmentSummary instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'sectionId': instance.sectionId,
+  'sectionName': instance.sectionName,
+  'sectionLabel': instance.sectionLabel,
+  'gradeLevelId': instance.gradeLevelId,
+  'gradeLevelName': instance.gradeLevelName,
+  'gradeLevelRank': instance.gradeLevelRank,
+  'rollNumber': instance.rollNumber,
+};
+
 _MeEntity _$MeEntityFromJson(Map<String, dynamic> json) => _MeEntity(
   id: json['id'] as String,
   email: json['email'] as String,
@@ -43,6 +69,11 @@ _MeEntity _$MeEntityFromJson(Map<String, dynamic> json) => _MeEntity(
   ),
   schoolId: json['schoolId'] as String,
   school: SchoolSummary.fromJson(json['school'] as Map<String, dynamic>),
+  enrollment: json['enrollment'] == null
+      ? null
+      : StudentEnrollmentSummary.fromJson(
+          json['enrollment'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$MeEntityToJson(_MeEntity instance) => <String, dynamic>{
@@ -52,6 +83,7 @@ Map<String, dynamic> _$MeEntityToJson(_MeEntity instance) => <String, dynamic>{
   'role': _$UserRoleEnumMap[instance.role]!,
   'schoolId': instance.schoolId,
   'school': instance.school,
+  'enrollment': instance.enrollment,
 };
 
 const _$UserRoleEnumMap = {

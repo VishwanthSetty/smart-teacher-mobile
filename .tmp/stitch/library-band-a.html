@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Smart Teacher - Student Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0D47A1',
+                        'primary-container': '#E3F2FD',
+                        'on-primary-container': '#0D47A1',
+                        'secondary': '#2196F3',
+                        'secondary-container': '#90CAF9',
+                        'tertiary-container': '#D0E7FB',
+                        'surface': '#FFFFFF',
+                        'on-surface': '#12263A',
+                        'on-surface-variant': '#5B6B7B',
+                        'outline': '#93A2B0',
+                        'success': '#2E7D32',
+                        'warning': '#F9A825',
+                        'error': '#D32F2F',
+                        'blue-100': '#E3F2FD',
+                        'blue-200': '#D0E7FB',
+                        'blue-300': '#B8DBF9',
+                        'blue-400': '#A1CFF7',
+                        'blue-500': '#90CAF9',
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    spacing: {},
+                    fontFamily: {
+                        "headline": ["Fredoka", "sans-serif"],
+                        "display": ["Fredoka", "sans-serif"],
+                        "body": ["Nunito Sans", "sans-serif"],
+                        "label": ["Nunito Sans", "sans-serif"]
+                    },
+                    fontSize: {}
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #FFFFFF;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="font-body text-on-surface antialiased bg-surface pb-24">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-white shadow-[0_8px_24px_rgba(13,71,161,0.08)] z-40 transition-all duration-200 active:scale-95">
+<div class="flex items-center justify-between px-6 h-16 w-full max-w-[390px] mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-[44px] h-[44px] rounded-full overflow-hidden bg-primary-container flex items-center justify-center shrink-0">
+<img class="w-full h-full object-cover" data-alt="A round, friendly blue owl mascot wearing a graduation cap, designed in a flat, vector illustration style suitable for a children's educational app." src="https://lh3.googleusercontent.com/aida/AEtjO1XDM2v-xK6AtqNDPn99FGEJCaGHycDkSF6CkA2VvuLJpM10uAhZB2Rab_0m6jJj63eUz83IgiKq6NAq_b9TkIljW4ed-u3wRwdvkJCjGxWRiqvfXaRqQnwY_ghezxXCvsScIsByaQ1udtj7PTPQTUwgrSFePPjao10Ed_7SQKhkCofUDrx_VrI_DUEb2UggUp9XSWDjIbgU3U5R-zgBR7gj5toCiYLUdHX6_uF4drLcjUbM4h8_uSe_nws"/>
+</div>
+<h1 class="font-headline text-[28px] font-bold text-primary">Hi, Aarav!</h1>
+</div>
+<!-- Optional Actions if any, keeping it clean for younger students -->
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[390px] mx-auto px-6 py-6 flex flex-col gap-6">
+<!-- Today Card -->
+<section class="bg-blue-100 rounded-[28px] p-6 flex items-center gap-4 shadow-[0_8px_24px_rgba(13,71,161,0.08)]">
+<div class="w-[72px] h-[72px] shrink-0">
+<img class="w-full h-full object-contain drop-shadow-sm" data-alt="A round, friendly blue owl mascot wearing a graduation cap, designed in a flat, vector illustration style suitable for a children's educational app." src="https://lh3.googleusercontent.com/aida/AEtjO1XDM2v-xK6AtqNDPn99FGEJCaGHycDkSF6CkA2VvuLJpM10uAhZB2Rab_0m6jJj63eUz83IgiKq6NAq_b9TkIljW4ed-u3wRwdvkJCjGxWRiqvfXaRqQnwY_ghezxXCvsScIsByaQ1udtj7PTPQTUwgrSFePPjao10Ed_7SQKhkCofUDrx_VrI_DUEb2UggUp9XSWDjIbgU3U5R-zgBR7gj5toCiYLUdHX6_uF4drLcjUbM4h8_uSe_nws"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-headline text-[20px] font-bold text-primary mb-1">Tuesday</h2>
+<p class="font-body text-[17px] text-on-surface">You have 4 subjects today</p>
+</div>
+</section>
+<!-- Subject Grid -->
+<section class="grid grid-cols-2 gap-5">
+<!-- Subject Card: Maths -->
+<button class="bg-surface rounded-[28px] h-[190px] flex flex-col items-center p-4 shadow-[0_8px_24px_rgba(13,71,161,0.08)] active:scale-95 transition-transform duration-200">
+<div class="w-[80px] h-[80px] rounded-2xl bg-blue-100 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">calculate</span>
+</div>
+<h3 class="font-headline text-[18px] font-bold text-on-surface mb-auto">Maths</h3>
+<div class="flex items-center gap-4 text-on-surface-variant font-headline font-semibold text-[16px] mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">play_arrow</span>
+<span>12</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">description</span>
+<span>8</span>
+</div>
+</div>
+</button>
+<!-- Subject Card: Science -->
+<button class="bg-surface rounded-[28px] h-[190px] flex flex-col items-center p-4 shadow-[0_8px_24px_rgba(13,71,161,0.08)] active:scale-95 transition-transform duration-200">
+<div class="w-[80px] h-[80px] rounded-2xl bg-blue-200 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">science</span>
+</div>
+<h3 class="font-headline text-[18px] font-bold text-on-surface mb-auto">Science</h3>
+<div class="flex items-center gap-4 text-on-surface-variant font-headline font-semibold text-[16px] mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">play_arrow</span>
+<span>6</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">description</span>
+<span>4</span>
+</div>
+</div>
+</button>
+<!-- Subject Card: English -->
+<button class="bg-surface rounded-[28px] h-[190px] flex flex-col items-center p-4 shadow-[0_8px_24px_rgba(13,71,161,0.08)] active:scale-95 transition-transform duration-200">
+<div class="w-[80px] h-[80px] rounded-2xl bg-blue-300 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<h3 class="font-headline text-[18px] font-bold text-on-surface mb-auto">English</h3>
+<div class="flex items-center gap-4 text-on-surface-variant font-headline font-semibold text-[16px] mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">play_arrow</span>
+<span>10</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">description</span>
+<span>5</span>
+</div>
+</div>
+</button>
+<!-- Subject Card: Social Studies -->
+<button class="bg-surface rounded-[28px] h-[190px] flex flex-col items-center p-4 shadow-[0_8px_24px_rgba(13,71,161,0.08)] active:scale-95 transition-transform duration-200">
+<div class="w-[80px] h-[80px] rounded-2xl bg-blue-400 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">public</span>
+</div>
+<h3 class="font-headline text-[18px] font-bold text-on-surface mb-auto text-center leading-tight">Social Studies</h3>
+<div class="flex items-center gap-4 text-on-surface-variant font-headline font-semibold text-[16px] mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">play_arrow</span>
+<span>8</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px] text-primary">description</span>
+<span>2</span>
+</div>
+</div>
+</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-white shadow-[0_-4px_12px_rgba(13,71,161,0.04)] pb-safe pt-2">
+<div class="fixed bottom-0 left-0 right-0 w-full flex justify-around items-center px-4 py-3 max-w-[390px] mx-auto bg-white">
+<!-- Active Tab: Student -->
+<button class="flex flex-col items-center justify-center bg-[#E3F2FD] text-[#0D47A1] rounded-[16px] px-6 py-2 transition-transform duration-180 ease-in-out active:scale-90 w-[48px] h-[48px] box-content">
+<span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label text-[12px] font-medium">Student</span>
+</button>
+<!-- Inactive Tab: Teacher -->
+<button class="flex flex-col items-center justify-center text-[#93A2B0] px-6 py-2 hover:bg-[#F5F9FF] rounded-[16px] transition-transform duration-180 ease-in-out active:scale-90 w-[48px] h-[48px] box-content">
+<span class="material-symbols-outlined text-[24px] mb-1">menu_book</span>
+<span class="font-label text-[12px] font-medium">Teacher</span>
+</button>
+</div>
+</nav>
+</body></html>

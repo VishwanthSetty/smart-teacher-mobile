@@ -1,0 +1,21 @@
+{
+  "name": "assets/6677994744381388235",
+  "projectId": "4086503233287179347",
+  "designSystem": {
+    "displayName": "Smart Teacher Student",
+    "theme": {
+      "colorMode": "LIGHT",
+      "colorVariant": "FIDELITY",
+      "customColor": "#2196F3",
+      "overridePrimaryColor": "#2196F3",
+      "overrideSecondaryColor": "#90CAF9",
+      "overrideTertiaryColor": "#0D47A1",
+      "overrideNeutralColor": "#FFFFFF",
+      "headlineFont": "COMFORTAA",
+      "bodyFont": "NUNITO_SANS",
+      "labelFont": "NUNITO_SANS",
+      "roundness": "ROUND_FULL",
+      "designMd": "# Smart Teacher — Student\nMaterial 3 portrait mobile at 390×844. Use only #FFFFFF, #E3F2FD, #90CAF9, #2196F3, #0D47A1 and neutral text #12263A/#5B6B7B/#93A2B0. Semantic colors only: #2E7D32 success, #F9A825 warning, #D32F2F error. No purple, teal, pink, orange, or decorative green. Differentiate subjects with icons and blue tint tiles (#E3F2FD, #D0E7FB, #B8DBF9, #A1CFF7, #90CAF9), never new hues. Fredoka headings and Nunito UI/body. Cards 20–28px radius by age band, sheets 28px top radius, buttons 16px, chips fully rounded, 4pt spacing, soft blue shadow rgba(13,71,161,.08) 0 8px 24px. White page. Flat rounded-vector illustrations only, never photos; a small round blue owl in a graduation cap appears only for younger students. Touch targets at least 48×48 and body text at least 15px. No progress, percentages, streaks, points, XP, badges, leaderboards, bookmarks, or continue-watching UI. Motion: smooth, purposeful 180–300ms with standard easing; respect reduced motion. Band B is the fallback: 24px title, 15px body, 56px targets, 24px cards, 24px screen padding, 16px gaps."
+    }
+  }
+}

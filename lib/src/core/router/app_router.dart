@@ -6,9 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
-import '../../features/library/domain/content_node_entity.dart';
-import '../../features/library/presentation/content_item_stub_screen.dart';
+import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/library/presentation/curriculum_tree_screen.dart';
+import '../../features/library/presentation/document_reader_screen.dart';
+import '../../features/library/presentation/video_player_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -21,13 +22,14 @@ class AppRoutes {
 
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String roleSelection = '/role-selection';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String profile = '/profile';
 
-  /// The curriculum tree (PRD §5.4.2) and the stub player/reader it hands off
-  /// to. Parameterised, so they are built with the `*Path` helpers below rather
+  /// The curriculum tree and the video player/document reader it hands off to.
+  /// Parameterised, so they are built with the `*Path` helpers below rather
   /// than interpolated at the call site.
   static const String curriculumTree = '/curricula/:$idParam/tree';
   static const String video = '/videos/:$idParam';
@@ -45,6 +47,9 @@ class AppRoutes {
   static String documentPath(String documentId) =>
       '/documents/${Uri.encodeComponent(documentId)}';
 
+  static String loginPath(String role) =>
+      '/login?role=${Uri.encodeComponent(role)}';
+
   /// Query parameter carrying the emailed reset token into
   /// [resetPassword] (PRD §5.1.4; the deep-link scheme itself is the open
   /// question in §9.2).
@@ -58,6 +63,7 @@ class AppRoutes {
 
   /// Reachable without a session. Everything not listed here is gated.
   static const Set<String> public = <String>{
+    roleSelection,
     login,
     forgotPassword,
     resetPassword,
@@ -99,11 +105,13 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
       // Session resolved. Release whatever was parked on the splash screen,
       // re-checking it against the status we ended up with.
       if (location == AppRoutes.splash) {
-        final String? pending = state.uri.queryParameters[AppRoutes.pendingParam];
-        final String target = pending ??
+        final String? pending =
+            state.uri.queryParameters[AppRoutes.pendingParam];
+        final String target =
+            pending ??
             (status == SessionStatus.authenticated
                 ? AppRoutes.home
-                : AppRoutes.login);
+                : AppRoutes.roleSelection);
         return _gate(status, Uri.parse(target).path) ?? target;
       }
 
@@ -116,9 +124,14 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
             const SplashScreen(),
       ),
       GoRoute(
+        path: AppRoutes.roleSelection,
+        builder: (BuildContext context, GoRouterState state) =>
+            const RoleSelectionScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         builder: (BuildContext context, GoRouterState state) =>
-            const LoginScreen(),
+            LoginScreen(role: state.uri.queryParameters['role'] ?? 'student'),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
@@ -129,8 +142,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.resetPassword,
         builder: (BuildContext context, GoRouterState state) =>
             ResetPasswordScreen(
-          token: state.uri.queryParameters[AppRoutes.resetTokenParam],
-        ),
+              token: state.uri.queryParameters[AppRoutes.resetTokenParam],
+            ),
       ),
       // The role-based shell (§5.7). Its tabs are deliberately not routes —
       // see [AppShell] for why the tab set stays off the URL.
@@ -147,7 +160,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             const ProfileScreen(),
       ),
-      // The tree and its two stub leaves (§5.4.2). Pushed over the shell
+      // The tree and its two content leaves. Pushed over the shell
       // rather than nested in it: they are a drill-down out of the Library
       // tab, and the tab bar has nothing to offer while you are inside one.
       //
@@ -159,32 +172,29 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.curriculumTree,
         builder: (BuildContext context, GoRouterState state) =>
             CurriculumTreeScreen(
-          curriculumId: state.pathParameters[AppRoutes.idParam] ?? '',
-          title: state.extra as String?,
-        ),
+              curriculumId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
       ),
       GoRoute(
         path: AppRoutes.video,
         builder: (BuildContext context, GoRouterState state) =>
-            ContentItemStubScreen(
-          itemId: state.pathParameters[AppRoutes.idParam] ?? '',
-          kind: ContentItemKind.video,
-          title: state.extra as String?,
-        ),
+            VideoPlayerScreen(
+              videoId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
       ),
       GoRoute(
         path: AppRoutes.document,
         builder: (BuildContext context, GoRouterState state) =>
-            ContentItemStubScreen(
-          itemId: state.pathParameters[AppRoutes.idParam] ?? '',
-          kind: ContentItemKind.document,
-          title: state.extra as String?,
-        ),
+            DocumentReaderScreen(
+              documentId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
       ),
     ],
-    errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
-      body: Center(child: Text('Page not found: ${state.uri}')),
-    ),
+    errorBuilder: (BuildContext context, GoRouterState state) =>
+        Scaffold(body: Center(child: Text('Page not found: ${state.uri}'))),
   );
 
   // Router first: disposing it detaches its listener from [refresh], so the
@@ -213,7 +223,7 @@ String? _gate(SessionStatus status, String path) {
     SessionStatus.authenticated =>
       isPublic || path == AppRoutes.splash ? AppRoutes.home : null,
 
-    SessionStatus.unauthenticated => isPublic ? null : AppRoutes.login,
+    SessionStatus.unauthenticated => isPublic ? null : AppRoutes.roleSelection,
   };
 }
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only cleartext allowance. This file lives in src/debug/res, so it is
+  compiled into debug builds only and can never reach a release APK.
+
+  Why it exists: Android 9+ blocks cleartext HTTP by default. The dev API
+  defaults to http://localhost:4000 (see dio_client.dart), and in `api` storage
+  mode the playback route 302-redirects segments to presigned URLs on the
+  object store — which in a local MinIO setup is also cleartext. ExoPlayer's
+  allowCrossProtocolRedirects only decides whether the *player* follows an
+  https -> http hop; the platform still has to permit the resulting request.
+
+  If your local object store answers on a host other than the two below, add it
+  here. Release builds stay strict: every production host must be HTTPS.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- The host machine as seen from the Android emulator. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

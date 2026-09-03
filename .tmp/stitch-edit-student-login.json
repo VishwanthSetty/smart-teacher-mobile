@@ -1,0 +1,7 @@
+{
+  "projectId": "4086503233287179347",
+  "selectedScreenIds": ["c21e3e97d2154bc5bd937a8bad0e155f"],
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "Refine this login design into a clearly grouped state sheet of four complete 390×844 mobile frames: default, incorrect credentials, disabled account, and rate-limited waiting. Keep the same Smart Teacher blue Material 3 layout and all three fields: School code, Email, Password. Error and waiting feedback must be inline rounded banners above the form, never toast overlays. In the rate-limited frame show ‘Too many attempts. Try again in 4:32.’ and disable Sign in. Remove every visible occurrence of ‘Wise Owl’, ‘Wise Owl Learning’, or any other invented brand text. The owl illustration must contain no text or logo; the only brand name allowed is ‘Smart Teacher’. Preserve Fredoka headings, Nunito body, large accessible targets, and Flutter-feasible layout."
+}

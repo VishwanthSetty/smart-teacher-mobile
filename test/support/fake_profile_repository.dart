@@ -4,7 +4,8 @@ import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart'
 
 /// Scripted [ProfileRepository] for tests.
 class FakeProfileRepository implements ProfileRepository {
-  FakeProfileRepository({MeEntity? user, this.error}) : user = user ?? buildMe();
+  FakeProfileRepository({MeEntity? user, this.error})
+    : user = user ?? buildMe();
 
   /// Mutable so a test can change what the *next* call answers — the profile
   /// screen's pull-to-refresh (PRD §5.2) is only interesting when the second
@@ -34,6 +35,7 @@ MeEntity buildMe({
   String email = 'asha@springfield.edu',
   UserRole role = UserRole.teacher,
   SchoolStatus schoolStatus = SchoolStatus.active,
+  StudentEnrollmentSummary? enrollment,
 }) {
   return MeEntity(
     id: id,
@@ -47,5 +49,6 @@ MeEntity buildMe({
       slug: 'springfield',
       status: schoolStatus,
     ),
+    enrollment: enrollment,
   );
 }

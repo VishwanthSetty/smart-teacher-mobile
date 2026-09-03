@@ -14,9 +14,13 @@ class AppConstants {
   static const double spacingLg = 24;
   static const double spacingXl = 32;
 
-  /// Standard corner radius used across cards, buttons and sheets.
-  static const double radius = 16;
+  /// Compatibility radius for older feature widgets.
+  static const double radius = 20;
+
+  static const double cardRadius = 20;
+  static const double buttonRadius = 16;
+  static const double inputRadius = 16;
 
   /// Default animation duration for micro-interactions.
-  static const Duration animationDuration = Duration(milliseconds: 250);
+  static const Duration animationDuration = Duration(milliseconds: 220);
 }

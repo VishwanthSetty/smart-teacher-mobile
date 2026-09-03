@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/school_suspension_controller.dart';
+import '../../../core/theme/student_age_band.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../profile/presentation/profile_view.dart';
@@ -32,7 +33,12 @@ import 'widgets/curriculum_card.dart';
 /// Renders a body, not a `Scaffold`: the shell owns the app bar and the tab bar
 /// (see `AppShell`).
 class LibraryScreen extends ConsumerWidget {
-  const LibraryScreen({super.key});
+  const LibraryScreen({this.studentAgeBand, this.studentName, super.key});
+
+  /// Null for the teacher shell. Student shells provide one of the three
+  /// Stitch density bands, falling back to [StudentAgeBand.learners].
+  final StudentAgeBand? studentAgeBand;
+  final String? studentName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +59,13 @@ class LibraryScreen extends ConsumerWidget {
       child: curricula.when(
         data: (List<CurriculumEntity> items) => items.isEmpty
             ? const _LibraryEmptyView()
-            : _CurriculumList(curricula: items),
+            : studentAgeBand == null
+            ? _CurriculumList(curricula: items)
+            : _StudentCurriculumList(
+                curricula: items,
+                ageBand: studentAgeBand!,
+                studentName: studentName,
+              ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace _) => ErrorRetryView(
           error: AppError.from(error),
@@ -62,6 +74,120 @@ class LibraryScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _StudentCurriculumList extends StatelessWidget {
+  const _StudentCurriculumList({
+    required this.curricula,
+    required this.ageBand,
+    required this.studentName,
+  });
+
+  final List<CurriculumEntity> curricula;
+  final StudentAgeBand ageBand;
+  final String? studentName;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double padding = ageBand == StudentAgeBand.scholars ? 20 : 24;
+    final double gap = switch (ageBand) {
+      StudentAgeBand.explorers => 20,
+      StudentAgeBand.learners => 16,
+      StudentAgeBand.scholars => 12,
+    };
+
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: <Widget>[
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(padding, padding, padding, 0),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (ageBand != StudentAgeBand.scholars) ...<Widget>[
+                  Text(
+                    'Hi, ${_firstName(studentName)}!',
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: AppConstants.spacingXs),
+                  Text(
+                    ageBand == StudentAgeBand.explorers
+                        ? 'Let\'s learn!'
+                        : 'Let\'s learn something today',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: gap),
+                ],
+                Text(
+                  ageBand == StudentAgeBand.explorers
+                      ? 'Your Library'
+                      : 'My subjects',
+                  style: theme.textTheme.titleLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(padding, gap, padding, padding),
+          sliver: ageBand == StudentAgeBand.scholars
+              ? _studentRows(gap)
+              : _studentGrid(gap),
+        ),
+      ],
+    );
+  }
+
+  Widget _studentGrid(double gap) {
+    return SliverGrid(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: gap,
+        mainAxisSpacing: gap,
+        mainAxisExtent: ageBand == StudentAgeBand.explorers ? 212 : 190,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        (BuildContext context, int index) => _card(context, index),
+        childCount: curricula.length,
+      ),
+    );
+  }
+
+  Widget _studentRows(double gap) {
+    return SliverList.builder(
+      itemCount: curricula.length,
+      itemBuilder: (BuildContext context, int index) => Padding(
+        padding: EdgeInsets.only(
+          bottom: index == curricula.length - 1 ? 0 : gap,
+        ),
+        child: _card(context, index),
+      ),
+    );
+  }
+
+  Widget _card(BuildContext context, int index) {
+    final CurriculumEntity curriculum = curricula[index];
+    return CurriculumCard(
+      curriculum: curriculum,
+      studentAgeBand: ageBand,
+      onTap: () => context.push(
+        AppRoutes.curriculumTreePath(curriculum.id),
+        extra: curriculum.subjectName,
+      ),
+    );
+  }
+
+  String _firstName(String? name) {
+    final String trimmed = name?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return 'there';
+    }
+    return trimmed.split(RegExp(r'\s+')).first;
   }
 }
 

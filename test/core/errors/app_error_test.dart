@@ -185,6 +185,34 @@ void main() {
     });
   });
 
+  group('native media status mapping', () {
+    test('maps ExoPlayer 401 and AVPlayer 403 through the shared mapper', () {
+      expect(
+        AppError.tryFromHttpFailureDescription(
+          'InvalidResponseCodeException: Response code: 401',
+        ),
+        isA<UnauthorizedError>(),
+      );
+      expect(
+        AppError.tryFromHttpFailureDescription('AVFoundation HTTP 403'),
+        isA<ForbiddenError>(),
+      );
+      expect(
+        AppError.tryFromHttpFailureDescription(
+          'server returned status code = 403',
+        ),
+        isA<ForbiddenError>(),
+      );
+    });
+
+    test('ignores an unrelated status-like number without HTTP context', () {
+      expect(
+        AppError.tryFromHttpFailureDescription('unrelated media error 403'),
+        isNull,
+      );
+    });
+  });
+
   group('malformed bodies', () {
     test('an HTML body from a proxy falls back to the default message', () {
       final AppError error = AppError.fromDioException(

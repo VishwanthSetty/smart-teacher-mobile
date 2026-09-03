@@ -10,6 +10,7 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/reset_password_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
@@ -32,19 +33,19 @@ void main() {
       await tester.pump();
 
       expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.byType(LoginScreen), findsNothing);
+      expect(find.byType(RoleSelectionScreen), findsNothing);
 
       gate.complete();
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('sends a user with no stored session to /login',
         (WidgetTester tester) async {
       await _pumpApp(tester, storage: FakeTokenStorage());
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('sends a user with a stored session to /home',
@@ -67,7 +68,7 @@ void main() {
         storage: FakeTokenStorage(refreshToken: 'refresh', failReads: true),
       );
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 
@@ -114,7 +115,7 @@ void main() {
       gate.complete();
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 
@@ -128,7 +129,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppShell), findsNothing);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('public auth routes stay reachable',
@@ -153,7 +154,7 @@ void main() {
       container.read(routerProvider).go('/nope');
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
       expect(find.textContaining('Page not found'), findsNothing);
     });
   });
@@ -237,7 +238,7 @@ void main() {
       container.read(authEventNotifierProvider).notifyLoggedOut();
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
       expect(
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
@@ -260,7 +261,7 @@ void main() {
       await container.read(sessionControllerProvider.notifier).signOut();
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
       expect(await storage.getAccessToken(), isNull);
       expect(await storage.getRefreshToken(), isNull);
       expect(
@@ -272,7 +273,7 @@ void main() {
     testWidgets('signing back in returns to /home', (WidgetTester tester) async {
       final ProviderContainer container =
           await _pumpApp(tester, storage: FakeTokenStorage());
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
 
       container.read(sessionControllerProvider.notifier).onSignedIn();
       await tester.pumpAndSettle();
@@ -312,3 +313,4 @@ Future<ProviderContainer> _pumpApp(
 
   return container;
 }
+

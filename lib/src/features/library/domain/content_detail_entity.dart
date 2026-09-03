@@ -25,6 +25,9 @@ abstract interface class ContentDetailEntity {
 /// This is deliberately the learner/teacher shape, not the admin ingest shape:
 /// status, object-storage keys, renditions, and playback tokens do not belong
 /// on this phase's read-only stub.
+// TODO(PRD §B1): Future backend improvement: add `posterUrl` to
+// `VideoEntity`; until then list rows must use a static placeholder and must
+// not mint a playback token per row just to obtain a poster.
 @freezed
 abstract class VideoEntity with _$VideoEntity implements ContentDetailEntity {
   const factory VideoEntity({

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Smart Teacher - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&amp;family=Nunito+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .font-fredoka { font-family: 'Fredoka', sans-serif; }
+        .font-nunito { font-family: 'Nunito Sans', sans-serif; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0D47A1',
+                        secondary: '#2196F3',
+                        surface: '#FFFFFF',
+                        surfaceLight: '#E3F2FD',
+                        textMain: '#12263A',
+                        textMuted: '#5B6B7B',
+                        textLight: '#93A2B0',
+                        error: '#D32F2F',
+                        errorBg: '#FDECEA',
+                        warning: '#F9A825',
+                        warningBg: '#FFF8E1',
+                    },
+                    boxShadow: {
+                        'soft': '0 8px 24px rgba(13,71,161,0.08)',
+                    },
+                    borderRadius: {
+                        'xl': '1rem', // 16px
+                        '2xl': '1.5rem', // 24px
+                        '3xl': '2rem', // 32px
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-textMain font-nunito antialiased min-h-screen flex items-center justify-center">
+<!-- Mobile Container (390x844) -->
+<div class="w-full max-w-[390px] h-[844px] bg-surface relative overflow-hidden flex flex-col shadow-2xl rounded-[40px] border-[8px] border-gray-900 mx-auto">
+<!-- Header Panel with Mascot -->
+<div class="w-full bg-surfaceLight rounded-b-3xl h-[260px] flex flex-col items-center justify-end pb-6 relative shrink-0">
+<img alt="Smart Teacher Mascot" class="w-48 h-48 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-8h13xDzK2EuQ_VKU2EiP44lEoCiE363Iz6cxGIZGXruarM8BpBSqVe59AGeS_ypyYATg4cj6S_qhI8RV5r24RWkkYLg19kyyNmRgBJot6BkpJkPymBB56qxIvDSZUsOwqsQAaPe6zO9UtG4tvl1DtHBjO1txle_CF9wvq_WQMVEI2qouzwjrdnRdeLit2zn5A6ICvJ8i6cyYqXy-WOr7aFDXOBKeguNKFTJg8Io8pGFfEVOPeaxFTPc8a1nJRZFGTQ3eq7RGf9Y"/>
+</div>
+<!-- Main Content Scroll Area -->
+<div class="flex-1 overflow-y-auto px-6 py-8 flex flex-col gap-6">
+<!-- Welcome Text -->
+<div class="text-center">
+<h1 class="font-fredoka text-[24px] font-bold text-primary mb-1">Welcome back!</h1>
+<p class="text-[15px] text-textMuted">Sign in to continue learning</p>
+</div>
+<!-- Default Login Form Card -->
+<div class="bg-surface rounded-2xl p-6 shadow-soft flex flex-col gap-4">
+<!-- School Code Field -->
+<div class="flex flex-col gap-1">
+<div class="relative flex items-center bg-surfaceLight rounded-xl h-[56px] px-4 group focus-within:ring-2 focus-within:ring-secondary transition-all">
+<span class="material-symbols-outlined text-textMuted mr-3">school</span>
+<input aria-label="School code" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[15px] text-textMain placeholder-textLight" placeholder="School code" type="text"/>
+</div>
+<p class="text-[12px] text-textLight ml-2 mt-1">Ask your teacher if you don't know it</p>
+</div>
+<!-- Email Field -->
+<div class="relative flex items-center bg-surfaceLight rounded-xl h-[56px] px-4 group focus-within:ring-2 focus-within:ring-secondary transition-all">
+<span class="material-symbols-outlined text-textMuted mr-3">mail</span>
+<input aria-label="Email address" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[15px] text-textMain placeholder-textLight" placeholder="Email address" type="email"/>
+</div>
+<!-- Password Field -->
+<div class="relative flex items-center bg-surfaceLight rounded-xl h-[56px] px-4 group focus-within:ring-2 focus-within:ring-secondary transition-all">
+<span class="material-symbols-outlined text-textMuted mr-3">lock</span>
+<input aria-label="Password" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[15px] text-textMain placeholder-textLight pr-10" placeholder="Password" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute right-4 text-textMuted hover:text-primary transition-colors focus:outline-none">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Forgot Password Link -->
+<div class="flex justify-end mt-1">
+<a class="text-[14px] text-secondary font-medium hover:underline focus:outline-none" href="#">Forgot password?</a>
+</div>
+<!-- Sign In Button -->
+<button class="w-full bg-secondary text-white font-nunito font-bold text-[16px] h-[56px] rounded-xl flex items-center justify-center hover:bg-opacity-90 active:scale-[0.98] transition-all mt-2">
+                    Sign in
+                </button>
+</div>
+<!-- Section for Variants Showcase (Stacked for presentation purposes) -->
+<div class="mt-8 pt-8 border-t border-gray-100 flex flex-col gap-4 pb-12">
+<p class="text-xs font-bold text-textLight uppercase tracking-wider text-center mb-2">UI Variants</p>
+<!-- Error Banner A -->
+<div class="bg-errorBg rounded-xl p-4 flex items-start gap-3 border border-red-100">
+<span class="material-symbols-outlined text-error mt-0.5">error</span>
+<p class="text-[14px] text-error font-medium leading-tight">Email or password is incorrect.</p>
+</div>
+<!-- Error Banner B -->
+<div class="bg-errorBg rounded-xl p-4 flex items-start gap-3 border border-red-100">
+<span class="material-symbols-outlined text-error mt-0.5">block</span>
+<p class="text-[14px] text-error font-medium leading-tight">This account has been disabled. Ask your school admin.</p>
+</div>
+<!-- Waiting Banner C & Disabled Button State -->
+<div class="flex flex-col gap-3">
+<div class="bg-warningBg rounded-xl p-4 flex items-start gap-3 border border-yellow-100">
+<span class="material-symbols-outlined text-warning mt-0.5">timer</span>
+<p class="text-[14px] text-warning font-medium leading-tight">Too many attempts. Try again in 4:32.</p>
+</div>
+<button class="w-full bg-[#90CAF9] text-white/90 font-nunito font-bold text-[16px] h-[56px] rounded-xl flex items-center justify-center cursor-not-allowed" disabled="">
+                        Sign in
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

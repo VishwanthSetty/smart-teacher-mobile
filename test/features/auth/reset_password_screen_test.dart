@@ -9,6 +9,7 @@ import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/reset_password_screen.dart';
 
 import '../../support/fake_auth_repository.dart';
@@ -156,7 +157,7 @@ void main() {
 
       expect(auth.lastResetToken, 'token-from-email');
       expect(auth.lastPassword, 'correct-horse-battery');
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
 
       // Every session is revoked server-side, so the local one must go too —
       // otherwise the router would bounce straight back into the app on dead
@@ -332,3 +333,4 @@ Future<void> _tapSubmit(WidgetTester tester) async {
 
 ButtonStyleButton _submitButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
+

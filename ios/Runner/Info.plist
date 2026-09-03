@@ -26,6 +26,39 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!--
+	  App Transport Security for HLS playback (viewer PRD B1).
+
+	  In `api` storage mode the playback route 302-redirects segments and the
+	  poster to presigned object-store URLs, so AVPlayer talks to a second host
+	  besides the API. ATS already allows any HTTPS host serving TLS 1.2+ with
+	  forward secrecy, which covers S3 and any CDN in front of it — no entry is
+	  needed for those, and a blanket NSAllowsArbitraryLoads is deliberately
+	  NOT set here.
+
+	  An exception is required only when the object store is reached over
+	  cleartext or with a legacy TLS configuration — typically a self-hosted
+	  MinIO in dev or staging. Add that host as its own NSExceptionDomains
+	  entry, mirroring the localhost one below, and keep it out of the release
+	  configuration. The Android counterpart lives in
+	  android/app/src/debug/res/xml/network_security_config.xml.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<!-- The dev API default, http://localhost:4000 (dio_client.dart). -->
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

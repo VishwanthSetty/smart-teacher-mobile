@@ -41,6 +41,12 @@ dependencies:
   # Networking
   dio: ^5.9.0
 
+  # Native HLS playback (ExoPlayer on Android, AVPlayer on iOS)
+  video_player: ^2.11.1
+
+  # PDF rendering from the existing whole-file presigned download URL
+  pdfrx: ^2.4.7
+
   # Token storage (Keychain on iOS, Keystore on Android)
   flutter_secure_storage: ^10.0.0-beta.4
 

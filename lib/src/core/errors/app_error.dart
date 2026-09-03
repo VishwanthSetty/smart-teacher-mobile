@@ -44,44 +44,86 @@ sealed class AppError implements Exception {
     }
 
     final _ApiErrorBody body = _ApiErrorBody.parse(response.data);
-    final int status = response.statusCode ?? 0;
+    return AppError.fromHttpStatus(
+      statusCode: response.statusCode ?? 0,
+      message: body.message,
+      errorCode: body.errorCode,
+      fieldErrors: body.fieldErrors,
+      headers: response.headers,
+      cause: exception,
+    );
+  }
 
-    return switch (status) {
+  /// Maps an HTTP response when Dio is not the component that performed the
+  /// request. Native media players report status failures as error text, so
+  /// they enter the same closed error model here instead of branching inside
+  /// player presentation code.
+  factory AppError.fromHttpStatus({
+    required int statusCode,
+    String? message,
+    String? errorCode,
+    List<String> fieldErrors = const <String>[],
+    Headers? headers,
+    Object? cause,
+  }) {
+    final _ApiErrorBody body = _ApiErrorBody(
+      message: message,
+      errorCode: errorCode,
+      fieldErrors: fieldErrors,
+    );
+
+    return switch (statusCode) {
       401 => UnauthorizedError(
-        message:
-            body.message ?? 'Your session has expired. Please sign in again.',
+        message: message ?? 'Your session has expired. Please sign in again.',
         errorCode: body.errorCode,
-        cause: exception,
+        cause: cause,
       ),
-      403 => _forbidden(body, exception),
+      403 => _forbidden(body, cause),
       404 => NotFoundError(
         // Deliberately generic. The API answers 404 (not 403) for records
         // the caller may not see, so a permission-flavoured message here
         // would leak the existence of records (PRD §4, §6.3).
         message: "We couldn't find what you were looking for.",
         errorCode: body.errorCode,
-        cause: exception,
+        cause: cause,
       ),
       429 => RateLimitedError(
-        message: body.message ?? 'Too many attempts. Please try again later.',
-        retryAfter: _retryAfter(response.headers),
+        message: message ?? 'Too many attempts. Please try again later.',
+        retryAfter: headers == null ? null : _retryAfter(headers),
         errorCode: body.errorCode,
-        cause: exception,
+        cause: cause,
       ),
       400 || 422 => ValidationError(
-        message: body.message ?? 'Please check the details you entered.',
+        message: message ?? 'Please check the details you entered.',
         fieldErrors: body.fieldErrors,
-        statusCode: status,
+        statusCode: statusCode,
         errorCode: body.errorCode,
-        cause: exception,
+        cause: cause,
       ),
       _ => UnknownError(
-        message: body.message ?? 'Something went wrong. Please try again.',
-        statusCode: status,
+        message: message ?? 'Something went wrong. Please try again.',
+        statusCode: statusCode,
         errorCode: body.errorCode,
-        cause: exception,
+        cause: cause,
       ),
     };
+  }
+
+  /// Extracts an HTTP status from the context-bearing formats emitted by
+  /// ExoPlayer and AVPlayer, then delegates to [AppError.fromHttpStatus].
+  /// An unrelated number in an error description is deliberately ignored.
+  static AppError? tryFromHttpFailureDescription(String description) {
+    final RegExp pattern = RegExp(
+      r'(?:response\s+code|status\s+code|http(?:\s+(?:status|error))?)'
+      r'\s*[:=]?\s*(\d{3})\b',
+      caseSensitive: false,
+    );
+    final RegExpMatch? match = pattern.firstMatch(description);
+    final int? statusCode = int.tryParse(match?.group(1) ?? '');
+    if (statusCode == null) {
+      return null;
+    }
+    return AppError.fromHttpStatus(statusCode: statusCode, cause: description);
   }
 
   /// Widens [AppError.fromDioException] to anything a repository might catch,
@@ -245,7 +287,7 @@ Future<T> guardApiCall<T>(Future<T> Function() request) async {
 /// an explicit error code first, the message text only as a fallback — prose
 /// matching is brittle and should disappear once `apps/api` exposes a stable
 /// code for this case.
-AppError _forbidden(_ApiErrorBody body, DioException exception) {
+AppError _forbidden(_ApiErrorBody body, Object? cause) {
   final String haystack = '${body.errorCode ?? ''} ${body.message ?? ''}'
       .toLowerCase();
   final bool suspended = haystack.contains('suspend');
@@ -256,7 +298,7 @@ AppError _forbidden(_ApiErrorBody body, DioException exception) {
         : body.message ?? "You don't have access to this.",
     isSchoolSuspended: suspended,
     errorCode: body.errorCode,
-    cause: exception,
+    cause: cause,
   );
 }
 

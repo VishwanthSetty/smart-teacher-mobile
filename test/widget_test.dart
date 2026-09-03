@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_teacher_mobile/src/app.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 
 import 'support/fake_token_storage.dart';
 
@@ -25,6 +26,7 @@ void main() {
 
     // Once storage answers "no session", the gate takes over (PRD §6.6).
     await tester.pumpAndSettle();
-    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.byType(RoleSelectionScreen), findsOneWidget);
   });
 }
+

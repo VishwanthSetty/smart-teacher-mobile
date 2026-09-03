@@ -112,9 +112,7 @@ class CurriculumTreeScreen extends ConsumerWidget {
     );
   }
 
-  /// The handoff to the player/reader, both of which are out of scope this
-  /// phase (§5.4.2): the stub route carries the item id, so the real screen can
-  /// drop in behind it without the tree changing.
+  /// The handoff to the native player or the still-stubbed document reader.
   void _openItem(
     BuildContext context,
     ContentItemEntity item,

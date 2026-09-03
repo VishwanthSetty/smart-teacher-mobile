@@ -44,6 +44,21 @@ replaced with an API- or database-backed implementation without touching any UI.
 ```bash
 flutter pub get
 flutter run
+Invoke-RestMethod http://localhost:4000/health
+
+adb reverse tcp:4000 tcp:4000
+
+cd "D:\Brinda Publications\Brinda Repos\smart-teacher-mobile"
+flutter run --dart-define=API_URL=http://localhost:4000
+```
+
+Production builds must also set the app environment. This enables app-wide
+screen-capture protection before the first Flutter frame:
+
+```bash
+flutter build apk --release \
+  --dart-define=APP_ENV=production \
+  --dart-define=API_URL=https://api.example.com
 ```
 
 ## Quality checks

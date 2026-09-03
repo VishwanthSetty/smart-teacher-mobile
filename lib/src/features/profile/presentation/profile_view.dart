@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/school_suspension_controller.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../auth/presentation/logout_controller.dart';
@@ -40,6 +41,7 @@ class ProfileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bool suspended = ref.watch(schoolSuspensionProvider);
     final AsyncValue<MeEntity> profile = ref.watch(profileControllerProvider);
+    final ThemeMode themeMode = ref.watch(themeControllerProvider);
 
     if (suspended) {
       return SchoolSuspendedView(
@@ -55,6 +57,8 @@ class ProfileView extends ConsumerWidget {
       child: profile.when(
         data: (MeEntity user) => _ProfileBody(
           user: user,
+          themeMode: themeMode,
+          onThemeChanged: ref.read(themeControllerProvider.notifier).set,
           onSignOut: () => signOut(ref),
           onSignOutEverywhere: () =>
               unawaited(_confirmSignOutEverywhere(context, ref)),
@@ -113,11 +117,15 @@ Future<void> _confirmSignOutEverywhere(
 class _ProfileBody extends StatelessWidget {
   const _ProfileBody({
     required this.user,
+    required this.themeMode,
+    required this.onThemeChanged,
     required this.onSignOut,
     required this.onSignOutEverywhere,
   });
 
   final MeEntity user;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeChanged;
   final VoidCallback onSignOut;
   final VoidCallback onSignOutEverywhere;
 
@@ -165,6 +173,25 @@ class _ProfileBody extends StatelessWidget {
           label: 'Email',
           value: user.email,
         ),
+        if (user.enrollment
+            case final StudentEnrollmentSummary enrollment) ...<Widget>[
+          const SizedBox(height: AppConstants.spacingSm),
+          _DetailTile(
+            icon: Icons.class_outlined,
+            label: 'Class',
+            value: enrollment.sectionLabel,
+          ),
+          if (enrollment.rollNumber case final String rollNumber) ...<Widget>[
+            const SizedBox(height: AppConstants.spacingSm),
+            _DetailTile(
+              icon: Icons.numbers_outlined,
+              label: 'Roll number',
+              value: rollNumber,
+            ),
+          ],
+        ],
+        const SizedBox(height: AppConstants.spacingSm),
+        _ThemeTile(value: themeMode, onChanged: onThemeChanged),
         const SizedBox(height: AppConstants.spacingXl),
         FilledButton.icon(
           onPressed: onSignOut,
@@ -178,6 +205,78 @@ class _ProfileBody extends StatelessWidget {
           label: const Text('Sign out everywhere'),
         ),
       ],
+    );
+  }
+}
+
+class _ThemeTile extends StatelessWidget {
+  const _ThemeTile({required this.value, required this.onChanged});
+
+  final ThemeMode value;
+  final ValueChanged<ThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingMd,
+        vertical: AppConstants.spacingSm,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppConstants.radius),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.palette_outlined,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: AppConstants.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Theme', style: theme.textTheme.bodyLarge),
+                Text(
+                  'Choose how the app looks',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppConstants.spacingSm),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<ThemeMode>(
+              value: value,
+              borderRadius: BorderRadius.circular(AppConstants.radius),
+              onChanged: (ThemeMode? mode) {
+                if (mode != null) {
+                  onChanged(mode);
+                }
+              },
+              items: const <DropdownMenuItem<ThemeMode>>[
+                DropdownMenuItem<ThemeMode>(
+                  value: ThemeMode.light,
+                  child: Text('Light'),
+                ),
+                DropdownMenuItem<ThemeMode>(
+                  value: ThemeMode.dark,
+                  child: Text('Dark'),
+                ),
+                DropdownMenuItem<ThemeMode>(
+                  value: ThemeMode.system,
+                  child: Text('System'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/school_suspension_controller.dart';
+import '../../../core/theme/student_age_band.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../classes/presentation/my_classes_screen.dart';
 import '../../library/presentation/library_screen.dart';
@@ -85,6 +86,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     final List<ShellTab> tabs = shellTabsFor(user.role);
     final int index = _selected.clamp(0, tabs.length - 1);
     final ShellTab current = tabs[index];
+    final bool isStudentShell =
+        tabs.contains(ShellTab.library) &&
+        tabs.contains(ShellTab.profile) &&
+        !tabs.contains(ShellTab.myClasses) &&
+        !tabs.contains(ShellTab.roster);
+    final StudentAgeBand? studentAgeBand = isStudentShell
+        ? StudentAgeBand.fromGradeRank(user.enrollment?.gradeLevelRank)
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -107,7 +116,14 @@ class _AppShellState extends ConsumerState<AppShell> {
       body: SafeArea(
         child: IndexedStack(
           index: index,
-          children: <Widget>[for (final ShellTab tab in tabs) _bodyFor(tab)],
+          children: <Widget>[
+            for (final ShellTab tab in tabs)
+              _bodyFor(
+                tab,
+                studentAgeBand: studentAgeBand,
+                studentName: isStudentShell ? user.name : null,
+              ),
+          ],
         ),
       ),
       // A one-tab shell gets no tab bar: `NavigationBar` asserts on fewer than
@@ -137,10 +153,17 @@ class _AppShellState extends ConsumerState<AppShell> {
   ///
   /// Exhaustive over [ShellTab]: a new destination is an analyzer error here
   /// until it has something to render.
-  Widget _bodyFor(ShellTab tab) => switch (tab) {
+  Widget _bodyFor(
+    ShellTab tab, {
+    required StudentAgeBand? studentAgeBand,
+    required String? studentName,
+  }) => switch (tab) {
     ShellTab.myClasses => const MyClassesScreen(),
     ShellTab.roster => const RosterScreen(),
-    ShellTab.library => const LibraryScreen(),
+    ShellTab.library => LibraryScreen(
+      studentAgeBand: studentAgeBand,
+      studentName: studentName,
+    ),
     ShellTab.profile => const ProfileView(),
   };
 }

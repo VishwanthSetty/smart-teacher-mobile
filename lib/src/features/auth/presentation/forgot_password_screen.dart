@@ -150,7 +150,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             TextButton(
               onPressed: state.isSubmitting
                   ? null
-                  : () => context.go(AppRoutes.login),
+                  : () => context.go(AppRoutes.roleSelection),
               child: const Text('Back to sign in'),
             ),
           ],
@@ -192,7 +192,7 @@ class _SentConfirmation extends ConsumerWidget {
         ),
         const SizedBox(height: AppConstants.spacingLg),
         FilledButton(
-          onPressed: () => context.go(AppRoutes.login),
+          onPressed: () => context.go(AppRoutes.roleSelection),
           child: const Text('Back to sign in'),
         ),
         const SizedBox(height: AppConstants.spacingSm),

@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_teacher_mobile/src/app.dart';
 import 'package:smart_teacher_mobile/src/core/errors/app_error.dart';
+import 'package:smart_teacher_mobile/src/core/router/app_router.dart';
 import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/classes/data/teacher_assignment_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
 import 'package:smart_teacher_mobile/src/features/roster/data/section_repository.dart';
@@ -375,7 +377,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(container.read(currentUserProvider), isNull);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 }
@@ -421,6 +423,9 @@ Future<ProviderContainer> _pumpLogin(
   );
   await tester.pumpAndSettle();
 
+  container.read(routerProvider).go(AppRoutes.login);
+  await tester.pumpAndSettle();
+
   expect(find.byType(LoginScreen), findsOneWidget);
   return container;
 }
@@ -445,3 +450,5 @@ Future<void> _tapSignIn(WidgetTester tester) async {
 
 ButtonStyleButton _signInButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
+
+

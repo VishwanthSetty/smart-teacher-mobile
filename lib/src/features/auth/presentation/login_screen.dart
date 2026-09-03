@@ -10,16 +10,11 @@ import 'login_state.dart';
 import 'retry_countdown.dart';
 import 'widgets/auth_banner.dart';
 
-/// Login (PRD §5.1.1): email, password, school slug.
-///
-/// The slug is a first-class credential, not a setting — email is unique per
-/// school, not globally, so the same address can exist in two tenants.
-///
-/// There is no navigation code here. A successful submit opens the session and
-/// the router's redirect moves off this route (PRD §6.6); see
-/// [LoginController].
+/// Login stays navigation-free: opening the session drives the router gate.
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, required this.role});
+
+  final String role;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -32,9 +27,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _schoolSlugController = TextEditingController();
 
   bool _obscurePassword = true;
-
-  /// Off until the first submit, so the form doesn't turn red while a user is
-  /// still typing their first character.
   bool _validateOnChange = false;
 
   @override
@@ -47,15 +39,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     setState(() => _validateOnChange = true);
-
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    // Dismiss the keyboard so the error banner isn't hidden behind it.
     FocusScope.of(context).unfocus();
-
-    await ref.read(loginControllerProvider.notifier).submit(
+    await ref
+        .read(loginControllerProvider.notifier)
+        .submit(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           schoolSlug: _schoolSlugController.text.trim(),
@@ -69,11 +60,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.spacingLg),
+        child: SingleChildScrollView(
+          child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: AutofillGroup(
                 child: Form(
                   key: _formKey,
@@ -85,95 +75,141 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      Text(
-                        AppConstants.appName,
-                        style: theme.textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppConstants.spacingXs),
-                      Text(
-                        'Sign in to continue',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      _LoginHero(role: widget.role),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.spacingMd,
+                          AppConstants.spacingSm,
+                          AppConstants.spacingMd,
+                          AppConstants.spacingLg,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppConstants.spacingXl),
-                      if (state.failure case final LoginFailure failure) ...<Widget>[
-                        _LoginFailureBanner(
-                          failure: failure,
-                          lockoutRemaining: state.lockoutRemaining,
-                        ),
-                        const SizedBox(height: AppConstants.spacingMd),
-                      ],
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.mail_outline),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        autofillHints: const <String>[AutofillHints.email],
-                        validator: validateEmailField,
-                      ),
-                      const SizedBox(height: AppConstants.spacingMd),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              'Welcome back!',
+                              style: theme.textTheme.headlineSmall,
+                              textAlign: TextAlign.center,
                             ),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                            const SizedBox(height: AppConstants.spacingXs),
+                            Text(
+                              'Sign in to continue learning',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            tooltip: _obscurePassword
-                                ? 'Show password'
-                                : 'Hide password',
-                          ),
-                        ),
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const <String>[AutofillHints.password],
-                        validator: validateExistingPassword,
-                      ),
-                      const SizedBox(height: AppConstants.spacingMd),
-                      TextFormField(
-                        controller: _schoolSlugController,
-                        decoration: const InputDecoration(
-                          labelText: 'School code',
-                          prefixIcon: Icon(Icons.school_outlined),
-                          helperText: 'Ask your school admin if you’re unsure.',
-                        ),
-                        textInputAction: TextInputAction.done,
-                        autocorrect: false,
-                        validator: validateSchoolSlugField,
-                        onFieldSubmitted: (String _) => _submit(),
-                      ),
-                      const SizedBox(height: AppConstants.spacingLg),
-                      FilledButton(
-                        onPressed: state.canSubmit ? _submit : null,
-                        child: state.isSubmitting
-                            ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                            const SizedBox(height: AppConstants.spacingMd),
+                            if (state.failure
+                                case final LoginFailure failure) ...<Widget>[
+                              _LoginFailureBanner(
+                                failure: failure,
+                                lockoutRemaining: state.lockoutRemaining,
+                              ),
+                              const SizedBox(height: AppConstants.spacingMd),
+                            ],
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(
+                                  AppConstants.spacingSm,
                                 ),
-                              )
-                            : const Text('Sign in'),
-                      ),
-                      const SizedBox(height: AppConstants.spacingSm),
-                      TextButton(
-                        onPressed: state.isSubmitting
-                            ? null
-                            : () => context.go(AppRoutes.forgotPassword),
-                        child: const Text('Forgot password?'),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: <Widget>[
+                                    TextFormField(
+                                      controller: _schoolSlugController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'School code',
+                                        prefixIcon: Icon(Icons.school_outlined),
+                                        helperText:
+                                            'Ask your teacher if you don\'t '
+                                            'know it.',
+                                      ),
+                                      textInputAction: TextInputAction.next,
+                                      autocorrect: false,
+                                      validator: validateSchoolSlugField,
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.spacingSm,
+                                    ),
+                                    TextFormField(
+                                      controller: _emailController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Email',
+                                        prefixIcon: Icon(Icons.mail_outline),
+                                      ),
+                                      keyboardType: TextInputType.emailAddress,
+                                      textInputAction: TextInputAction.next,
+                                      autocorrect: false,
+                                      autofillHints: const <String>[
+                                        AutofillHints.email,
+                                      ],
+                                      validator: validateEmailField,
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.spacingSm,
+                                    ),
+                                    TextFormField(
+                                      controller: _passwordController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Password',
+                                        prefixIcon: const Icon(
+                                          Icons.lock_outline,
+                                        ),
+                                        suffixIcon: IconButton(
+                                          onPressed: () => setState(
+                                            () => _obscurePassword =
+                                                !_obscurePassword,
+                                          ),
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                          ),
+                                          tooltip: _obscurePassword
+                                              ? 'Show password'
+                                              : 'Hide password',
+                                        ),
+                                      ),
+                                      obscureText: _obscurePassword,
+                                      textInputAction: TextInputAction.done,
+                                      autofillHints: const <String>[
+                                        AutofillHints.password,
+                                      ],
+                                      validator: validateExistingPassword,
+                                      onFieldSubmitted: (String _) => _submit(),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: state.isSubmitting
+                                            ? null
+                                            : () => context.go(
+                                                AppRoutes.forgotPassword,
+                                              ),
+                                        child: const Text('Forgot password?'),
+                                      ),
+                                    ),
+                                    FilledButton(
+                                      onPressed: state.canSubmit
+                                          ? _submit
+                                          : null,
+                                      child: state.isSubmitting
+                                          ? const SizedBox.square(
+                                              dimension: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Text('Sign in'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -187,12 +223,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// Maps a [LoginFailure] onto the shared [AuthBanner].
+class _LoginHero extends StatelessWidget {
+  const _LoginHero({required this.role});
+
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 112,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      ),
+      child: Center(
+        child: role == 'teacher'
+            ? Icon(
+                Icons.school_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              )
+            : const _OwlMark(),
+      ),
+    );
+  }
+}
+
+/// Code-native, so it stays crisp without shipping an invented image logo.
+class _OwlMark extends StatelessWidget {
+  const _OwlMark();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+
+    return Semantics(
+      image: true,
+      label: 'Smart Teacher owl mascot',
+      child: SizedBox(
+        width: 116,
+        height: 96,
+        child: Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            Positioned(
+              bottom: 4,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(36),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 36,
+              child: Container(
+                width: 58,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    Icon(Icons.circle, size: 8),
+                    Icon(Icons.circle, size: 8),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 6,
+              child: Transform.rotate(
+                angle: -0.08,
+                child: const Icon(Icons.school_rounded, size: 48),
+              ),
+            ),
+            Positioned(
+              right: 6,
+              bottom: 14,
+              child: Transform.rotate(
+                angle: -0.4,
+                child: Icon(
+                  Icons.waving_hand_rounded,
+                  size: 30,
+                  color: colors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoginFailureBanner extends StatelessWidget {
-  const _LoginFailureBanner({
-    required this.failure,
-    this.lockoutRemaining,
-  });
+  const _LoginFailureBanner({required this.failure, this.lockoutRemaining});
 
   final LoginFailure failure;
   final Duration? lockoutRemaining;
@@ -201,8 +331,6 @@ class _LoginFailureBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthBanner(
       message: _message,
-      // Waiting out a lockout isn't the same kind of event as a rejected
-      // credential — it reads as "not yet", not "wrong".
       tone: failure is TooManyAttempts
           ? AuthBannerTone.waiting
           : AuthBannerTone.error,
@@ -219,8 +347,6 @@ class _LoginFailureBanner extends StatelessWidget {
     );
   }
 
-  /// The countdown is appended rather than baked into the failure so the
-  /// message updates every second without rebuilding the failure itself.
   String get _message {
     final Duration? remaining = lockoutRemaining;
     if (failure is! TooManyAttempts || remaining == null) {

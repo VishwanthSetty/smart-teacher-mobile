@@ -9,6 +9,7 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
+import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/current_user_controller.dart';
@@ -50,7 +51,7 @@ void main() {
         SessionStatus.unauthenticated,
       );
       expect(container.read(currentUserProvider), isNull);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('does not wait for the revoke before signing out', (
@@ -76,11 +77,11 @@ void main() {
         SessionStatus.unauthenticated,
       );
       expect(await storage.getRefreshToken(), isNull);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
 
       gate.complete();
       await tester.pumpAndSettle();
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('can revoke every session after explicit confirmation', (
@@ -119,7 +120,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
 
     testWidgets('cancelling sign out everywhere keeps the session', (
@@ -173,7 +174,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
       // Nothing to act on, so nothing is surfaced.
       expect(find.text('Could not reach the server.'), findsNothing);
     });
@@ -202,7 +203,7 @@ void main() {
         container.read(sessionControllerProvider),
         SessionStatus.unauthenticated,
       );
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RoleSelectionScreen), findsOneWidget);
     });
   });
 }
@@ -263,3 +264,4 @@ Future<void> _openProfile(WidgetTester tester) async {
   await tester.pumpAndSettle();
   expect(find.byType(ProfileScreen), findsOneWidget);
 }
+

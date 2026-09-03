@@ -47,6 +47,27 @@ abstract class SchoolSummary with _$SchoolSummary {
       _$SchoolSummaryFromJson(json);
 }
 
+/// Active student placement embedded in `GET /users/me`.
+///
+/// It is null for teachers and for students who have not been placed yet.
+/// [gradeLevelRank] selects the visual age band without a second request.
+@freezed
+abstract class StudentEnrollmentSummary with _$StudentEnrollmentSummary {
+  const factory StudentEnrollmentSummary({
+    required String id,
+    required String sectionId,
+    required String sectionName,
+    required String sectionLabel,
+    required String gradeLevelId,
+    required String gradeLevelName,
+    required int gradeLevelRank,
+    String? rollNumber,
+  }) = _StudentEnrollmentSummary;
+
+  factory StudentEnrollmentSummary.fromJson(Map<String, dynamic> json) =>
+      _$StudentEnrollmentSummaryFromJson(json);
+}
+
 /// `GET /users/me` (PRD §8.2) — the only source of the actor's role. The
 /// role-based shell (§5.7) selects off [role]; nothing else in the app may
 /// assume a role.
@@ -59,6 +80,7 @@ abstract class MeEntity with _$MeEntity {
     @JsonKey(unknownEnumValue: UserRole.unknown) required UserRole role,
     required String schoolId,
     required SchoolSummary school,
+    StudentEnrollmentSummary? enrollment,
   }) = _MeEntity;
 
   const MeEntity._();

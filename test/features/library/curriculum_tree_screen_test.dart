@@ -11,11 +11,17 @@ import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart
 import 'package:smart_teacher_mobile/src/features/library/data/content_detail_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/data/content_tree_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
+import 'package:smart_teacher_mobile/src/features/library/data/document_download_repository.dart';
+import 'package:smart_teacher_mobile/src/features/library/data/video_playback_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/domain/content_node_entity.dart';
 import 'package:smart_teacher_mobile/src/features/library/domain/curriculum_entity.dart';
-import 'package:smart_teacher_mobile/src/features/library/presentation/content_item_stub_screen.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/curriculum_tree_screen.dart';
+import 'package:smart_teacher_mobile/src/features/library/presentation/document_pdf_renderer.dart';
+import 'package:smart_teacher_mobile/src/features/library/presentation/document_reader_screen.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/library_screen.dart';
+import 'package:smart_teacher_mobile/src/features/library/presentation/video_playback_engine.dart';
+import 'package:smart_teacher_mobile/src/features/library/presentation/video_playback_session_controller.dart';
+import 'package:smart_teacher_mobile/src/features/library/presentation/video_player_screen.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/widgets/content_node_tile.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/widgets/curriculum_card.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
@@ -25,8 +31,12 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_content_detail_repository.dart';
 import '../../support/fake_content_tree_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
+import '../../support/fake_document_download_repository.dart';
+import '../../support/fake_document_pdf_renderer.dart';
 import '../../support/fake_profile_repository.dart';
 import '../../support/fake_token_storage.dart';
+import '../../support/fake_video_playback_engine.dart';
+import '../../support/fake_video_playback_repository.dart';
 
 void main() {
   group('opening the tree (PRD §5.4.2)', () {
@@ -124,6 +134,35 @@ void main() {
       await tester.tap(find.text('Equivalent fractions'));
       await tester.pumpAndSettle();
       expect(find.text('Halves and quarters'), findsOneWidget);
+    });
+
+    testWidgets('video rows use a placeholder without minting tokens', (
+      WidgetTester tester,
+    ) async {
+      final FakeVideoPlaybackRepository playback =
+          FakeVideoPlaybackRepository();
+      await _openTree(
+        tester,
+        playback: playback,
+        trees: FakeContentTreeRepository(
+          tree: ContentTreeEntity(
+            nodes: <ContentNodeEntity>[
+              buildNode(
+                title: 'Fractions',
+                videos: <ContentItemEntity>[
+                  buildItem(title: 'What is a fraction?'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Fractions'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
+      expect(playback.callCount, 0);
     });
   });
 
@@ -323,7 +362,7 @@ void main() {
   });
 
   group('content handoff (PRD §5.4.2)', () {
-    testWidgets('a video row fetches its id and shows metadata-only handoff', (
+    testWidgets('a video row opens the native player with its metadata', (
       WidgetTester tester,
     ) async {
       final FakeContentDetailRepository details = FakeContentDetailRepository(
@@ -357,28 +396,26 @@ void main() {
       await tester.tap(find.text('What is a fraction?'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ContentItemStubScreen), findsOneWidget);
+      expect(find.byType(VideoPlayerScreen), findsOneWidget);
       expect(details.requestedVideoIds, <String>['video-7']);
       expect(find.text('A short introduction.'), findsOneWidget);
+      expect(find.byTooltip('Play'), findsOneWidget);
+      expect(find.text('Playback coming soon'), findsNothing);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -350));
+      await tester.pump();
       expect(find.text('Fractions'), findsOneWidget);
       expect(find.text('2:05'), findsOneWidget);
-      expect(find.text('Playback coming soon'), findsOneWidget);
     });
 
-    testWidgets('a document row fetches its id and stops at the reader stub', (
+    testWidgets('a document row opens the PDF reader with a fresh URL', (
       WidgetTester tester,
     ) async {
-      final FakeContentDetailRepository details = FakeContentDetailRepository(
-        document: buildDocument(
-          id: 'doc-7',
-          title: 'Worksheet 1',
-          description: 'Practice questions.',
-          contentNodeTitle: 'Fractions',
-        ),
-      );
+      final FakeDocumentDownloadRepository downloads =
+          FakeDocumentDownloadRepository();
       await _openTree(
         tester,
-        details: details,
+        documentDownloads: downloads,
         trees: FakeContentTreeRepository(
           tree: ContentTreeEntity(
             nodes: <ContentNodeEntity>[
@@ -398,10 +435,11 @@ void main() {
       await tester.tap(find.text('Worksheet 1'));
       await tester.pumpAndSettle();
 
-      expect(details.requestedDocumentIds, <String>['doc-7']);
-      expect(find.text('Practice questions.'), findsOneWidget);
-      expect(find.text('Reader coming soon'), findsOneWidget);
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(DocumentReaderScreen), findsOneWidget);
+      expect(downloads.requestedDocumentIds, <String>['doc-7']);
+      expect(find.byKey(const Key('fake-pdf-surface')), findsOneWidget);
+      expect(find.text('Jump to page'), findsNothing);
+      expect(find.text('Reader coming soon'), findsNothing);
     });
 
     testWidgets('a missing item uses the generic 404 state without retry', (
@@ -471,7 +509,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(details.videoCallCount, 2);
-      expect(find.text('Playback coming soon'), findsOneWidget);
+      expect(find.byType(VideoPlayerScreen), findsOneWidget);
+      expect(find.byTooltip('Play'), findsOneWidget);
     });
 
     testWidgets('a suspension-flavoured item 403 shows suspension screen', (
@@ -479,7 +518,7 @@ void main() {
     ) async {
       final ProviderContainer container = await _openTree(
         tester,
-        details: FakeContentDetailRepository(
+        documentDownloads: FakeDocumentDownloadRepository(
           error: const ForbiddenError(
             message: "Your school's access is suspended.",
             isSchoolSuspended: true,
@@ -540,6 +579,8 @@ Future<ProviderContainer> _openTree(
   WidgetTester tester, {
   required FakeContentTreeRepository trees,
   FakeContentDetailRepository? details,
+  FakeDocumentDownloadRepository? documentDownloads,
+  FakeVideoPlaybackRepository? playback,
   String curriculumId = 'curriculum-1',
 }) async {
   final ProviderContainer container = ProviderContainer(
@@ -561,6 +602,19 @@ Future<ProviderContainer> _openTree(
       contentTreeRepositoryProvider.overrideWithValue(trees),
       contentDetailRepositoryProvider.overrideWithValue(
         details ?? FakeContentDetailRepository(),
+      ),
+      documentDownloadRepositoryProvider.overrideWithValue(
+        documentDownloads ?? FakeDocumentDownloadRepository(),
+      ),
+      documentPdfRendererProvider.overrideWithValue(FakeDocumentPdfRenderer()),
+      videoPlaybackRepositoryProvider.overrideWithValue(
+        playback ?? FakeVideoPlaybackRepository(),
+      ),
+      videoPlaybackEngineFactoryProvider.overrideWithValue(
+        FakeVideoPlaybackEngineFactory(),
+      ),
+      playbackRefreshSchedulerProvider.overrideWithValue(
+        FakePlaybackRefreshScheduler(),
       ),
     ],
   );

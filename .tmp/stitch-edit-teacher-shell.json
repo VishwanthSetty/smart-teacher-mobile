@@ -1,0 +1,7 @@
+{
+  "projectId": "7753021071171110152",
+  "selectedScreenIds": ["9ffda9407c614d8abb89c6d61492ebd8"],
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "Correct the Teacher shell so every visible field is supported by GET /teacher-assignments. Remove all student counts, room names, times, schedules, attendance, or other invented data. Show the My Classes tab body with compact assignment cards containing only subject name plus either the server-composed section label such as ‘Grade 5 - A’ or the valid legacy fallback ‘all sections’. Keep a calm 64px teacher navigation bar with exactly My Classes, Roster, and Library, plus the profile avatar action in the app bar. Cards are read-only and not tappable. Keep the blue-only Smart Teacher design system and Flutter Material 3 feasibility."
+}
