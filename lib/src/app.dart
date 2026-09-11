@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'session_reset.dart';
 
 /// The root widget. Wires the router and theme into a [MaterialApp] and rebuilds
 /// only when the selected [ThemeMode] changes.
@@ -13,6 +14,10 @@ class SmartTeacherApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keeps the session-scoped caches from outliving the session that filled
+    // them; nothing else reads this provider's value.
+    ref.watch(sessionResetProvider);
+
     final themeMode = ref.watch(themeControllerProvider);
     final router = ref.watch(routerProvider);
 

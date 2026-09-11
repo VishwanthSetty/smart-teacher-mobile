@@ -10,7 +10,6 @@ import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/core/theme/theme_controller.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
-import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/current_user_controller.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
@@ -329,4 +328,3 @@ Future<void> _pullToRefresh(WidgetTester tester) async {
   await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
   await tester.pumpAndSettle();
 }
-
