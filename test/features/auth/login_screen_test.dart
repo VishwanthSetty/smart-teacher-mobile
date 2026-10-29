@@ -20,6 +20,7 @@ import 'package:smart_teacher_mobile/src/features/profile/data/current_user_cont
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
@@ -399,6 +400,7 @@ Future<ProviderContainer> _pumpLogin(
     // `Override` isn't exported by flutter_riverpod, so the list stays
     // inferred — matching the existing router tests.
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(storage ?? FakeTokenStorage()),
       authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
       profileRepositoryProvider

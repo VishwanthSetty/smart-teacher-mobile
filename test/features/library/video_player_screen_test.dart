@@ -8,6 +8,7 @@ import 'package:smart_teacher_mobile/src/features/library/presentation/video_pla
 import 'package:smart_teacher_mobile/src/features/library/presentation/video_playback_session_controller.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/video_player_screen.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_content_detail_repository.dart';
 import '../../support/fake_video_playback_engine.dart';
 import '../../support/fake_video_playback_repository.dart';
@@ -113,6 +114,7 @@ Future<void> _pumpPlayer(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+      ...activityOverrides(),
         contentDetailRepositoryProvider.overrideWithValue(
           FakeContentDetailRepository(
             video: buildVideo(id: 'video-1', durationSecs: null),

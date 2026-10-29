@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/session/school_suspension_controller.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/error_retry_view.dart';
@@ -190,6 +192,32 @@ class _ProfileBody extends StatelessWidget {
             ),
           ],
         ],
+        const SizedBox(height: AppConstants.spacingSm),
+        // Notification settings (mobile plan §5.10). On the profile rather than
+        // in the inbox's chrome alone, because a user who has turned everything
+        // off has an empty inbox and no obvious way back to the switches.
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spacingMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radius),
+          ),
+          tileColor: theme.colorScheme.surfaceContainerHighest,
+          leading: Icon(
+            Icons.notifications_none_outlined,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          title: const Text('Notifications'),
+          subtitle: Text(
+            'Alerts, reminders and quiet hours',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(AppRoutes.notificationPreferences),
+        ),
         const SizedBox(height: AppConstants.spacingSm),
         _ThemeTile(value: themeMode, onChanged: onThemeChanged),
         const SizedBox(height: AppConstants.spacingXl),

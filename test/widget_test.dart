@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_teacher_mobile/src/app.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
-import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 
 import 'support/fake_token_storage.dart';

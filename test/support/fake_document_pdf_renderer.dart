@@ -14,6 +14,14 @@ class FakeDocumentPdfRenderer implements DocumentPdfRenderer {
   int failedLoads;
   final List<Uri> uris = <Uri>[];
 
+  /// Where the reader asked to reopen, recorded because a restored `lastPage`
+  /// that silently wasn't applied looks exactly like a document opened at
+  /// page 1 (mobile plan §4).
+  final List<int?> initialPages = <int?>[];
+
+  /// Lets a test drive a page settle without a real PDF surface.
+  DocumentPdfPageChanged? pageChanged;
+
   @override
   Widget build({
     required Uri uri,
@@ -21,8 +29,12 @@ class FakeDocumentPdfRenderer implements DocumentPdfRenderer {
     required DocumentPdfReady onReady,
     required DocumentPdfLoadFailed onLoadFailed,
     required VoidCallback onRetry,
+    DocumentPdfPageChanged? onPageChanged,
+    int? initialPage,
   }) {
     uris.add(uri);
+    initialPages.add(initialPage);
+    pageChanged = onPageChanged;
     final bool shouldFail = failedLoads > 0;
     if (shouldFail) {
       failedLoads--;
@@ -30,7 +42,7 @@ class FakeDocumentPdfRenderer implements DocumentPdfRenderer {
     return _FakePdfSurface(
       key: ValueKey<String>(uri.toString()),
       pageCount: pageCount,
-      currentPage: currentPage,
+      currentPage: initialPage ?? currentPage,
       shouldFail: shouldFail,
       onReady: onReady,
       onLoadFailed: onLoadFailed,

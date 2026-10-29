@@ -5,6 +5,9 @@ import 'package:pdfrx/pdfrx.dart';
 typedef DocumentPdfReady = void Function(int pageCount, int currentPage);
 typedef DocumentPdfLoadFailed = void Function(Object error);
 
+/// Fired when the visible page changes, including once on open.
+typedef DocumentPdfPageChanged = void Function(int pageNumber);
+
 /// Keeps native PDFium/network work replaceable in widget tests.
 abstract interface class DocumentPdfRenderer {
   Widget build({
@@ -13,6 +16,14 @@ abstract interface class DocumentPdfRenderer {
     required DocumentPdfReady onReady,
     required DocumentPdfLoadFailed onLoadFailed,
     required VoidCallback onRetry,
+    DocumentPdfPageChanged? onPageChanged,
+
+    /// Where to reopen — the `lastPage` from the activity cache.
+    ///
+    /// Restored silently, with no chooser: a page is one swipe to correct,
+    /// which is why documents get the simple treatment and video positions do
+    /// not (mobile plan §4).
+    int? initialPage,
   });
 }
 
@@ -26,6 +37,8 @@ class PdfrxDocumentPdfRenderer implements DocumentPdfRenderer {
     required DocumentPdfReady onReady,
     required DocumentPdfLoadFailed onLoadFailed,
     required VoidCallback onRetry,
+    DocumentPdfPageChanged? onPageChanged,
+    int? initialPage,
   }) {
     return PdfViewer.uri(
       uri,
@@ -37,8 +50,25 @@ class PdfrxDocumentPdfRenderer implements DocumentPdfRenderer {
       params: PdfViewerParams(
         textSelectionParams: const PdfTextSelectionParams(enabled: true),
         onViewerReady: (PdfDocument document, PdfViewerController viewer) {
-          onReady(document.pages.length, viewer.pageNumber ?? 1);
+          final int pageCount = document.pages.length;
+          // Clamped, because `lastPage` is a snapshot: a document re-uploaded
+          // shorter would otherwise seek past its own end.
+          final int? resume = initialPage?.clamp(
+            1,
+            pageCount < 1 ? 1 : pageCount,
+          );
+          if (resume != null && resume > 1 && resume != viewer.pageNumber) {
+            viewer.goToPage(pageNumber: resume);
+          }
+          onReady(pageCount, resume ?? viewer.pageNumber ?? 1);
         },
+        onPageChanged: onPageChanged == null
+            ? null
+            : (int? pageNumber) {
+                if (pageNumber != null) {
+                  onPageChanged(pageNumber);
+                }
+              },
         onDocumentLoadFinished:
             (PdfDocumentRef documentRef, bool loadSucceeded) {
               if (!loadSucceeded) {

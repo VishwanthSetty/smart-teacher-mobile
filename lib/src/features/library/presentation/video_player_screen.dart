@@ -11,6 +11,10 @@ import '../../../core/session/school_suspension_controller.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/not_found_view.dart';
 import '../../../core/widgets/school_suspended_view.dart';
+import '../../activity/domain/resource_activity_entity.dart';
+import '../../activity/presentation/widgets/resume_prompt.dart';
+import '../../saved/presentation/widgets/bookmark_button.dart';
+import '../../activity/presentation/widgets/video_progress_reporter.dart';
 import '../../profile/presentation/profile_view.dart';
 import '../domain/content_detail_entity.dart';
 import '../domain/content_node_entity.dart';
@@ -39,13 +43,28 @@ class VideoPlayerScreen extends ConsumerWidget {
     final bool suspended = ref.watch(schoolSuspensionProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_displayTitle(detail.value))),
+      appBar: AppBar(
+        title: Text(_displayTitle(detail.value)),
+        actions: <Widget>[
+          // One of the save toggle's three homes (mobile plan §5.4). Hidden
+          // while a school is suspended, like every other action: the write
+          // would 403 and the queue would carry it until it was discarded.
+          if (!suspended)
+            BookmarkButton(
+              resourceId: videoId,
+              resourceType: ActivityResourceType.video,
+              title: _displayTitle(detail.value),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: suspended
             ? SchoolSuspendedView(onSignOut: () => signOut(ref))
             : detail.when(
-                data: (ContentDetailEntity data) =>
-                    _VideoDetailView(video: data as VideoEntity),
+                data: (ContentDetailEntity data) => _withProgressTracking(
+                  data as VideoEntity,
+                  _VideoDetailView(video: data),
+                ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (Object error, StackTrace _) =>
                     _buildDetailError(context, ref, request, error),
@@ -53,6 +72,21 @@ class VideoPlayerScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Attaches the progress reporter around the detail body.
+  ///
+  /// Wrapped here rather than inside the playback panel so one reporter covers
+  /// both the inline player and the full-screen route, and so it survives the
+  /// engine being replaced on a token re-mint. The duration comes from the
+  /// detail payload because the server refuses a beat for a video whose
+  /// duration it does not know.
+  Widget _withProgressTracking(VideoEntity video, Widget child) =>
+      VideoProgressReporter(
+        videoId: video.id,
+        title: video.title,
+        durationSecs: video.durationSecs,
+        child: child,
+      );
 
   String _displayTitle(ContentDetailEntity? detail) {
     final String fetched = detail?.title.trim() ?? '';
@@ -108,6 +142,9 @@ class _VideoDetailView extends ConsumerWidget {
       ),
       children: <Widget>[
         _PlaybackPanel(videoId: video.id),
+        // Directly under the player, because it is about the playhead. Renders
+        // nothing at all when there is no position to return to.
+        ResumePrompt(videoId: video.id),
         const SizedBox(height: AppConstants.spacingLg),
         Text(video.title, style: theme.textTheme.headlineSmall),
         if (description.isNotEmpty) ...<Widget>[

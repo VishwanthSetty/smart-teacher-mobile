@@ -21,6 +21,7 @@ import 'package:smart_teacher_mobile/src/features/roster/presentation/roster_scr
 import 'package:smart_teacher_mobile/src/features/roster/presentation/widgets/roster_search_field.dart';
 import 'package:smart_teacher_mobile/src/features/roster/presentation/widgets/student_card.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
@@ -393,6 +394,7 @@ Future<ProviderContainer> _pumpRoster(
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),

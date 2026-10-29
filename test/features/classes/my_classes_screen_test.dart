@@ -19,6 +19,7 @@ import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_c
 import 'package:smart_teacher_mobile/src/features/roster/data/section_repository.dart';
 import 'package:smart_teacher_mobile/src/features/roster/data/student_repository.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
@@ -26,6 +27,7 @@ import '../../support/fake_section_repository.dart';
 import '../../support/fake_student_repository.dart';
 import '../../support/fake_teacher_assignment_repository.dart';
 import '../../support/fake_token_storage.dart';
+import '../../support/shell_navigation.dart';
 
 void main() {
   group('scoping to the signed-in teacher (PRD §5.5.1)', () {
@@ -265,6 +267,7 @@ Future<ProviderContainer> _pumpMyClasses(
 
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
@@ -294,6 +297,9 @@ Future<ProviderContainer> _pumpMyClasses(
     ),
   );
   await tester.pumpAndSettle();
+
+  // The teacher shell opens on Home, so My Classes is a tab away.
+  await openShellTab(tester, 'My Classes');
 
   expect(find.byType(MyClassesScreen), findsOneWidget);
   return container;

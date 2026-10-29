@@ -8,10 +8,11 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
-import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/classes/data/teacher_assignment_repository.dart';
 import 'package:smart_teacher_mobile/src/features/classes/presentation/my_classes_screen.dart';
+import 'package:smart_teacher_mobile/src/features/home/presentation/student_home_screen.dart';
+import 'package:smart_teacher_mobile/src/features/home/presentation/teacher_dashboard_screen.dart';
 import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/library_screen.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
@@ -26,6 +27,7 @@ import 'package:smart_teacher_mobile/src/features/roster/presentation/widgets/st
 import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
@@ -36,19 +38,55 @@ import '../../support/fake_token_storage.dart';
 
 void main() {
   group('tab set selection (PRD §5.7)', () {
-    test('teacher gets My Classes · Roster · Library', () {
+    test('teacher gets Home · My Classes · Library · Tasks · Roster', () {
       expect(shellTabsFor(UserRole.teacher), <ShellTab>[
+        ShellTab.teacherHome,
         ShellTab.myClasses,
-        ShellTab.roster,
         ShellTab.library,
+        ShellTab.teacherTasks,
+        ShellTab.roster,
       ]);
     });
 
-    test('student gets Library · Profile', () {
+    test('student gets Home · Library · My Tasks · Saved · Profile', () {
       expect(shellTabsFor(UserRole.student), <ShellTab>[
+        ShellTab.studentHome,
         ShellTab.library,
+        ShellTab.studentTasks,
+        ShellTab.saved,
         ShellTab.profile,
       ]);
+    });
+
+    test('the two roles get different Tasks destinations', () {
+      // The same reason the Home values are split: `/me/tasks` and `/tasks`
+      // are different endpoints returning different shapes, so the choice
+      // belongs in the app's only role check rather than in a tab body.
+      expect(
+        shellTabsFor(UserRole.teacher),
+        isNot(contains(ShellTab.studentTasks)),
+      );
+      expect(
+        shellTabsFor(UserRole.student),
+        isNot(contains(ShellTab.teacherTasks)),
+      );
+    });
+
+    test('Saved is a student tab only', () {
+      // The teacher's tab bar has no room for a sixth destination, so they
+      // reach Saved through the pushed `/saved` route instead.
+      expect(shellTabsFor(UserRole.student), contains(ShellTab.saved));
+      expect(shellTabsFor(UserRole.teacher), isNot(contains(ShellTab.saved)));
+    });
+
+    test('the two roles get different Home destinations', () {
+      // Not one `home` tab with a branch behind it: `/home/student` and
+      // `/home/teacher` are different endpoints, and choosing between them
+      // here keeps that decision inside the app's only role check.
+      expect(
+        shellTabsFor(UserRole.teacher).first,
+        isNot(shellTabsFor(UserRole.student).first),
+      );
     });
 
     test('an unrecognised role degrades to a profile-only shell', () {
@@ -59,19 +97,21 @@ void main() {
   });
 
   group('teacher shell', () {
-    testWidgets('renders the three teacher tabs and opens on My Classes', (
+    testWidgets('renders the five teacher tabs and opens on Home', (
       WidgetTester tester,
     ) async {
       await _pumpShell(tester, role: UserRole.teacher);
 
       expect(_destinationLabels(tester), <String>[
+        'Home',
         'My Classes',
-        'Roster',
         'Library',
+        'Tasks',
+        'Roster',
       ]);
-      expect(find.byType(MyClassesScreen), findsOneWidget);
+      expect(find.byType(TeacherDashboardScreen), findsOneWidget);
       // The app bar names the current tab.
-      expect(find.widgetWithText(AppBar, 'My Classes'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Home'), findsOneWidget);
     });
 
     testWidgets('tapping through the tabs swaps the body', (
@@ -148,13 +188,26 @@ void main() {
   });
 
   group('student shell', () {
-    testWidgets('renders Library · Profile and opens on Library', (
+    testWidgets('renders the five student tabs and opens on Home', (
       WidgetTester tester,
     ) async {
       await _pumpShell(tester, role: UserRole.student);
 
-      expect(_destinationLabels(tester), <String>['Library', 'Profile']);
-      expect(find.widgetWithText(AppBar, 'Library'), findsOneWidget);
+      expect(_destinationLabels(tester), <String>[
+        'Home',
+        'Library',
+        'My Tasks',
+        'Saved',
+        'Profile',
+      ]);
+      expect(find.widgetWithText(AppBar, 'Home'), findsOneWidget);
+      expect(find.byType(StudentHomeScreen), findsOneWidget);
+      // The teacher's dashboard must not be built for a student at all — the
+      // two Home tabs are different destinations, not one with a branch.
+      expect(
+        find.byType(TeacherDashboardScreen, skipOffstage: false),
+        findsNothing,
+      );
       expect(find.byType(MyClassesScreen), findsNothing);
       expect(find.byType(RosterScreen), findsNothing);
     });
@@ -244,7 +297,13 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Try again'));
       await tester.pumpAndSettle();
 
-      expect(_destinationLabels(tester), <String>['Library', 'Profile']);
+      expect(_destinationLabels(tester), <String>[
+        'Home',
+        'Library',
+        'My Tasks',
+        'Saved',
+        'Profile',
+      ]);
     });
 
     testWidgets('the tab set follows the role a refresh returns', (
@@ -258,17 +317,47 @@ void main() {
         profile: profile,
       );
 
-      // Sitting on the third tab, which the student shell doesn't have — the
-      // selection has to be clamped rather than blow up on rebuild.
-      await _tapTab(tester, 'Library');
-      expect(find.widgetWithText(AppBar, 'Library'), findsOneWidget);
+      // Sitting on a tab the student shell doesn't have at all.
+      await _tapTab(tester, 'Roster');
+      expect(find.widgetWithText(AppBar, 'Roster'), findsOneWidget);
 
       profile.user = buildMe(role: UserRole.student);
       await container.read(profileControllerProvider.notifier).refresh();
       await tester.pumpAndSettle();
 
-      expect(_destinationLabels(tester), <String>['Library', 'Profile']);
+      expect(_destinationLabels(tester), <String>[
+        'Home',
+        'Library',
+        'My Tasks',
+        'Saved',
+        'Profile',
+      ]);
+      // Whatever index the selection lands on, it must be a tab this shell
+      // actually has — the point is that the rebuild cannot strand the user on
+      // a destination the new role never got.
       expect(find.widgetWithText(AppBar, 'Profile'), findsOneWidget);
+    });
+
+    testWidgets('a shorter tab set clamps the selection instead of crashing', (
+      WidgetTester tester,
+    ) async {
+      final FakeProfileRepository profile = FakeProfileRepository(
+        user: buildMe(role: UserRole.teacher),
+      );
+      final ProviderContainer container = await _pumpShell(
+        tester,
+        profile: profile,
+      );
+
+      // The teacher's fifth tab. The degraded shell has exactly one.
+      await _tapTab(tester, 'Roster');
+
+      profile.user = buildMe(role: UserRole.unknown);
+      await container.read(profileControllerProvider.notifier).refresh();
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(AppBar, 'Profile'), findsOneWidget);
+      expect(find.byType(ProfileView), findsOneWidget);
     });
   });
 
@@ -320,7 +409,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+      await _tapSignOut(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -347,6 +436,7 @@ Future<ProviderContainer> _pumpShell(
 
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
@@ -405,11 +495,20 @@ Future<void> _tapTab(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-/// The profile's sign-out button sits below the fold on the test surface —
-/// scroll it in rather than tapping at an offset that misses.
+/// The profile's sign-out button sits below the fold on the test surface.
+///
+/// `ensureVisible` is not enough on its own: [ProfileView] is a lazy
+/// `ListView`, so inside the student shell — where the tab bar eats height —
+/// the button is not merely off-screen, it has never been **built**, and a
+/// finder cannot locate what does not exist. Scrolling until it appears is
+/// what puts it in the tree.
 Future<void> _tapSignOut(WidgetTester tester) async {
   final Finder button = find.widgetWithText(FilledButton, 'Sign out');
-  await tester.ensureVisible(button);
+  await tester.scrollUntilVisible(
+    button,
+    120,
+    scrollable: find.byType(Scrollable).last,
+  );
   await tester.pumpAndSettle();
   await tester.tap(button);
   await tester.pumpAndSettle();

@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/session/school_suspension_controller.dart';
 import 'core/session/session_controller.dart';
 import 'features/classes/presentation/my_classes_controller.dart';
 import 'features/library/presentation/library_controller.dart';
+import 'features/notifications/presentation/notifications_controller.dart';
+import 'features/notifications/presentation/push_registration_controller.dart';
 import 'features/profile/presentation/profile_controller.dart';
 import 'features/roster/presentation/roster_controller.dart';
 import 'features/roster/presentation/roster_query.dart';
@@ -28,6 +32,11 @@ void _resetSessionScopedCaches(Ref ref) {
   ref.invalidate(rosterControllerProvider);
   ref.invalidate(rosterQueryProvider);
   ref.invalidate(sectionsControllerProvider);
+  // The inbox is in this list and not on `invalidateOnSignOut` for the reason
+  // the doc below gives: the shell's app bar *watches* it through the unread
+  // badge, so it is one of the providers that must not be rebuilt while the
+  // shell is still mounted.
+  ref.invalidate(notificationsControllerProvider);
   // The latch is a property of the school the *previous* actor belonged to;
   // the new one gets to be judged on their own 403s.
   ref.invalidate(schoolSuspensionProvider);
@@ -57,6 +66,18 @@ final Provider<void> sessionResetProvider = Provider<void>((Ref ref) {
       }
 
       _resetSessionScopedCaches(ref);
+
+      // Push registration rides the same transition, which is exactly the
+      // moment §5.10 names: "register the FCM/APNs token after login". It
+      // covers a restored session too, since that is the same transition —
+      // and `POST /me/devices` upserts on the token, so registering on every
+      // launch is correct rather than duplicative.
+      //
+      // Not awaited, and it never throws: push is best-effort, every alert is
+      // written in-app first, and nothing about signing in should wait on a
+      // device row. The de-registration half is in [LogoutController], where it
+      // runs *before* secure storage is cleared.
+      unawaited(ref.read(pushRegistrationControllerProvider).register());
     },
   );
 });

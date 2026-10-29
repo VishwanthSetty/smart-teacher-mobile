@@ -8,7 +8,6 @@ import 'package:smart_teacher_mobile/src/core/errors/app_error.dart';
 import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
-import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
@@ -16,6 +15,7 @@ import 'package:smart_teacher_mobile/src/features/profile/data/current_user_cont
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_screen.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_profile_repository.dart';
 import '../../support/fake_token_storage.dart';
@@ -99,12 +99,16 @@ void main() {
       );
 
       await _openProfile(tester);
-      await tester.tap(find.widgetWithText(TextButton, 'Sign out everywhere'));
-      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.widgetWithText(TextButton, 'Sign out everywhere'),
+      );
 
       expect(find.text('Sign out everywhere?'), findsOneWidget);
       expect(auth.logoutCallCount, 0);
 
+      // The confirm button lives in the dialog, not in the scrolling profile
+      // body, so it is tapped directly.
       await tester.tap(
         find.widgetWithText(FilledButton, 'Sign out everywhere'),
       );
@@ -137,8 +141,10 @@ void main() {
       );
 
       await _openProfile(tester);
-      await tester.tap(find.widgetWithText(TextButton, 'Sign out everywhere'));
-      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.widgetWithText(TextButton, 'Sign out everywhere'),
+      );
       await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
       await tester.pumpAndSettle();
 
@@ -221,6 +227,7 @@ Future<ProviderContainer> _pumpSignedIn(
     // `Override` isn't exported by flutter_riverpod, so the list stays
     // inferred — matching the existing auth tests.
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(storage),
       authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
       profileRepositoryProvider.overrideWithValue(FakeProfileRepository()),
@@ -251,11 +258,26 @@ Future<ProviderContainer> _pumpSignedIn(
 /// shell's app-bar action.
 Future<void> _tapSignOut(WidgetTester tester) async {
   await _openProfile(tester);
+  // Scrolled to, not merely ensured visible: the profile body is a `ListView`,
+  // so a control below the fold has not been *built* at all and no finder can
+  // match it. That became true of the sign-out button itself once the profile
+  // grew its notification-settings tile.
+  await _tapVisible(tester, find.widgetWithText(FilledButton, 'Sign out'));
+}
 
-  final Finder button = find.widgetWithText(FilledButton, 'Sign out');
-  await tester.ensureVisible(button);
+/// Taps a control that may sit below the fold on the test surface.
+///
+/// The profile body scrolls, and "Sign out everywhere" is beneath the primary
+/// sign-out button — tapping at its unscrolled offset misses the render box
+/// entirely and silently does nothing.
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    120,
+    scrollable: find.byType(Scrollable).last,
+  );
   await tester.pumpAndSettle();
-  await tester.tap(button);
+  await tester.tap(finder);
   await tester.pumpAndSettle();
 }
 

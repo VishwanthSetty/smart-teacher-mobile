@@ -9,11 +9,17 @@ import '../../../core/session/school_suspension_controller.dart';
 import '../../../core/theme/student_age_band.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../classes/presentation/my_classes_screen.dart';
+import '../../home/presentation/student_home_screen.dart';
+import '../../home/presentation/teacher_dashboard_screen.dart';
 import '../../library/presentation/library_screen.dart';
+import '../../notifications/presentation/notifications_controller.dart';
 import '../../profile/domain/me_entity.dart';
 import '../../profile/presentation/profile_controller.dart';
 import '../../profile/presentation/profile_view.dart';
 import '../../roster/presentation/roster_screen.dart';
+import '../../saved/presentation/saved_screen.dart';
+import '../../tasks/presentation/my_tasks_screen.dart';
+import '../../tasks/presentation/teacher_tasks_screen.dart';
 import '../domain/shell_tab.dart';
 
 /// The role-based navigation shell (PRD §5.7) — what `/home` actually is.
@@ -99,6 +105,14 @@ class _AppShellState extends ConsumerState<AppShell> {
       appBar: AppBar(
         title: Text(current.label),
         actions: <Widget>[
+          // The notification inbox (mobile plan §5.10). An app-bar action for
+          // **both** shells rather than a tab: every tab set is already at five
+          // destinations, which is a bottom bar's limit, and the inbox is a
+          // place you visit when the badge says to rather than one you navigate
+          // between. It is not a role branch — both roles get the same action,
+          // because `/me/notifications` is actor-scoped and answers for
+          // whoever is signed in.
+          const _NotificationsAction(),
           // Only for a tab set that has no Profile tab of its own — i.e. the
           // teacher's. Without it a teacher could never reach sign-out, which
           // lives on the profile screen (§5.1.3). Derived from the tab list,
@@ -158,14 +172,54 @@ class _AppShellState extends ConsumerState<AppShell> {
     required StudentAgeBand? studentAgeBand,
     required String? studentName,
   }) => switch (tab) {
+    ShellTab.studentHome => StudentHomeScreen(studentName: studentName),
+    ShellTab.teacherHome => const TeacherDashboardScreen(),
     ShellTab.myClasses => const MyClassesScreen(),
     ShellTab.roster => const RosterScreen(),
     ShellTab.library => LibraryScreen(
       studentAgeBand: studentAgeBand,
       studentName: studentName,
     ),
+    ShellTab.studentTasks => const MyTasksScreen(),
+    ShellTab.teacherTasks => const TeacherTasksScreen(),
+    // Collections are teacher-only, and the student shell is the only place
+    // this tab appears — so the flat variant is the right one here, and the
+    // flag is still passed in rather than read from the role.
+    ShellTab.saved => const SavedView(),
     ShellTab.profile => const ProfileView(),
   };
+}
+
+/// The inbox action, with its unread badge (mobile plan §5.10).
+///
+/// The count comes from the loaded inbox rather than from a count endpoint,
+/// because there isn't one — so it is capped at the first page and the label
+/// says `9+` past nine rather than claiming a total it cannot know. A badge is
+/// an invitation; an exact number it might be wrong about is not worth the
+/// extra round trip the honest version would need.
+///
+/// Watching [unreadNotificationCountProvider] from the shell is what keeps
+/// `NotificationsController` alive for the session, which is why that
+/// controller is not auto-disposing and why it clears itself on sign-out.
+class _NotificationsAction extends ConsumerWidget {
+  const _NotificationsAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final int unread = unreadNotificationCount(
+      ref.watch(notificationsControllerProvider),
+    );
+
+    return IconButton(
+      tooltip: 'Notifications',
+      onPressed: () => context.push(AppRoutes.notifications),
+      icon: Badge(
+        isLabelVisible: unread > 0,
+        label: Text(unread > 9 ? '9+' : '$unread'),
+        child: const Icon(Icons.notifications_none_outlined),
+      ),
+    );
+  }
 }
 
 /// Shown when `GET /users/me` failed on a restored session, so there is no

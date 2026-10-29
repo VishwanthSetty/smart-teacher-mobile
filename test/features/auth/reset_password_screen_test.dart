@@ -8,7 +8,6 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/forgot_password_screen.dart';
-import 'package:smart_teacher_mobile/src/features/auth/presentation/login_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/reset_password_screen.dart';
 

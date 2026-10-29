@@ -9,6 +9,7 @@ import 'package:smart_teacher_mobile/src/features/library/presentation/document_
 import 'package:smart_teacher_mobile/src/features/library/presentation/document_pdf_renderer.dart';
 import 'package:smart_teacher_mobile/src/features/library/presentation/document_reader_screen.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_document_download_repository.dart';
 import '../../support/fake_document_pdf_renderer.dart';
 
@@ -135,6 +136,7 @@ Future<void> _pumpReader(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+      ...activityOverrides(),
         documentDownloadRepositoryProvider.overrideWithValue(downloads),
         documentPdfRendererProvider.overrideWithValue(renderer),
         if (clock != null) documentClockProvider.overrideWithValue(clock),

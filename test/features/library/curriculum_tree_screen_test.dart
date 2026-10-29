@@ -27,6 +27,7 @@ import 'package:smart_teacher_mobile/src/features/library/presentation/widgets/c
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_content_detail_repository.dart';
 import '../../support/fake_content_tree_repository.dart';
@@ -37,6 +38,7 @@ import '../../support/fake_profile_repository.dart';
 import '../../support/fake_token_storage.dart';
 import '../../support/fake_video_playback_engine.dart';
 import '../../support/fake_video_playback_repository.dart';
+import '../../support/shell_navigation.dart';
 
 void main() {
   group('opening the tree (PRD §5.4.2)', () {
@@ -585,6 +587,7 @@ Future<ProviderContainer> _openTree(
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
@@ -627,6 +630,9 @@ Future<ProviderContainer> _openTree(
     ),
   );
   await tester.pumpAndSettle();
+
+  // Both shells open on Home now, so the library is a tab away.
+  await openShellTab(tester, 'Library');
 
   expect(find.byType(CurriculumCard), findsOneWidget);
   await tester.tap(find.byType(CurriculumCard));

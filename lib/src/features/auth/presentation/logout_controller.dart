@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../activity/presentation/activity_sync_controller.dart';
+import '../../notifications/presentation/push_registration_controller.dart';
 import '../data/auth_repository.dart';
 
 /// Which server-side sessions a logout revokes (PRD §5.1.3).
@@ -30,6 +32,15 @@ class LogoutController {
   /// default and sends the current refresh token; [LogoutScope.allDevices]
   /// omits it, which is the API's instruction to revoke every session.
   Future<void> logout({LogoutScope scope = LogoutScope.thisDevice}) async {
+    // **First**, and awaited, unlike everything else here (mobile plan §5.10).
+    // `DELETE /me/devices/:id` is a bearer-authenticated call, so it has to
+    // happen while the access token still exists — clearing storage first would
+    // strand the row on the server, and that row is precisely what a later push
+    // would be delivered to, on a device nobody is signed in on. It is one fast
+    // call that swallows its own failures, so awaiting it costs the logout
+    // nothing it can lose.
+    await _ref.read(pushRegistrationControllerProvider).unregister();
+
     // Read before clearing: the revoke needs a token pair that is about to
     // stop existing locally.
     final ({String? accessToken, String? refreshToken}) tokens =
@@ -53,7 +64,27 @@ class LogoutController {
       );
     }
 
+    // Before the gate flips, not after: the activity cache and the outbox both
+    // hold *this* actor's data, and carrying either into the next session would
+    // show one user another's history — or replay their queued beats under the
+    // new account's token (mobile plan §0, "never cache a resource list past
+    // logout").
+    //
+    // Queued-but-unsent progress is lost by this, deliberately. The alternative
+    // is holding one user's writes while another is signed in, and a beat is a
+    // far cheaper thing to lose than that.
+    await _clearLocalActivity();
+
     await _ref.read(sessionControllerProvider.notifier).signOut();
+  }
+
+  Future<void> _clearLocalActivity() async {
+    try {
+      await _ref.read(activitySyncControllerProvider).clearForSignOut();
+    } catch (_) {
+      // Same contract as the keystore read above: a database that will not
+      // open must not be able to trap a user in a session they asked to leave.
+    }
   }
 
   Future<({String? accessToken, String? refreshToken})> _readTokens() async {

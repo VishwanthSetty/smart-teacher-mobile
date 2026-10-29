@@ -5,13 +5,25 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/activity/domain/resource_activity_entity.dart';
+import '../../features/activity/presentation/history_screen.dart';
+import '../../features/activity/presentation/progress_summary_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/library/presentation/curriculum_tree_screen.dart';
 import '../../features/library/presentation/document_reader_screen.dart';
 import '../../features/library/presentation/video_player_screen.dart';
+import '../../features/notifications/presentation/notification_inbox_screen.dart';
+import '../../features/notifications/presentation/notification_preferences_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/saved/presentation/saved_screen.dart';
+import '../../features/search/presentation/search_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
+import '../../features/tasks/presentation/class_progress_screen.dart';
+import '../../features/tasks/presentation/student_task_detail_screen.dart';
+import '../../features/tasks/presentation/student_task_report_screen.dart';
+import '../../features/tasks/presentation/task_detail_screen.dart';
+import '../../features/tasks/presentation/task_progress_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../session/session_controller.dart';
 
@@ -27,6 +39,55 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String profile = '/profile';
+
+  /// The learning-activity screens. Both are pushed over the shell rather than
+  /// being tabs: each is a drill-down reached from a home rail or the profile,
+  /// and the tab bar has nothing to offer while you are inside one.
+  static const String history = '/history';
+  static const String progress = '/progress';
+
+  /// Phase 3–4 destinations that are pushed rather than tabbed.
+  ///
+  /// [saved] is a tab for the student shell and a pushed route for the
+  /// teacher's, whose tab set has no room for it (mobile plan §1); [search] is
+  /// a drill-down out of the Library tab's search field.
+  static const String saved = '/saved';
+  static const String search = '/search';
+
+  /// The two task detail routes. Separate paths because they are separate
+  /// endpoints with separate role gates and separate payloads — `/tasks/:id`
+  /// returns a task with its assignments, `/me/tasks/:id` returns the one
+  /// assignment that is yours. A single route that asked "which am I?" would
+  /// put a role decision outside `shellTabsFor`.
+  static const String task = '/tasks/:$idParam';
+  static const String studentTask = '/my-tasks/:$idParam';
+
+  /// The phase-5 teacher reports.
+  ///
+  /// Nested under the task they belong to, because both are scoped by it
+  /// server-side: `/tasks/:id/progress` and `/tasks/:id/students/:studentId`
+  /// are only answerable for a task this teacher created, and a student outside
+  /// their class scope is a `404` on the second (backend plan §4.4).
+  static const String taskProgress = '/tasks/:$idParam/progress';
+  static const String studentReport =
+      '/tasks/:$idParam/students/:$studentIdParam';
+  static const String classProgress = '/class-progress';
+
+  /// The notification inbox and its settings. Both are actor-scoped reads, so
+  /// neither needs a role check to decide what to show.
+  static const String notifications = '/notifications';
+  static const String notificationPreferences = '/notification-preferences';
+
+  /// The second path parameter, used only by [studentReport].
+  static const String studentIdParam = 'studentId';
+
+  /// Which history tab to open on — `video` or `document`. A query parameter
+  /// rather than a path segment because it is a preference, not a resource: an
+  /// absent or unrecognised value opens the default tab rather than 404ing.
+  static const String historyTypeParam = 'type';
+
+  static String historyPath(String type) =>
+      '/history?$historyTypeParam=${Uri.encodeComponent(type)}';
 
   /// The curriculum tree and the video player/document reader it hands off to.
   /// Parameterised, so they are built with the `*Path` helpers below rather
@@ -46,6 +107,19 @@ class AppRoutes {
 
   static String documentPath(String documentId) =>
       '/documents/${Uri.encodeComponent(documentId)}';
+
+  static String taskPath(String taskId) =>
+      '/tasks/${Uri.encodeComponent(taskId)}';
+
+  static String studentTaskPath(String taskId) =>
+      '/my-tasks/${Uri.encodeComponent(taskId)}';
+
+  static String taskProgressPath(String taskId) =>
+      '/tasks/${Uri.encodeComponent(taskId)}/progress';
+
+  static String studentReportPath(String taskId, String studentId) =>
+      '/tasks/${Uri.encodeComponent(taskId)}'
+      '/students/${Uri.encodeComponent(studentId)}';
 
   static String loginPath(String role) =>
       '/login?role=${Uri.encodeComponent(role)}';
@@ -160,6 +234,104 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             const ProfileScreen(),
       ),
+      // History and progress. Both are actor-scoped reads (`/me/activity`,
+      // `/me/progress/summary`), so neither needs a role check to decide what
+      // to show — the server already answered for whoever is signed in.
+      GoRoute(
+        path: AppRoutes.history,
+        builder: (BuildContext context, GoRouterState state) => HistoryScreen(
+          initialType: _historyTypeFrom(
+            state.uri.queryParameters[AppRoutes.historyTypeParam],
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.progress,
+        builder: (BuildContext context, GoRouterState state) =>
+            ProgressSummaryScreen(
+              // `extra` is a nicety from the screen that pushed this, not a
+              // dependency: it does not survive a deep link or a process
+              // restart, so the heading falls back to the student wording,
+              // which is the one that reads correctly for any actor.
+              isTeacherPreparation: state.extra as bool? ?? false,
+            ),
+      ),
+      // Saved and search (phase 3). Both are actor-scoped reads, so neither
+      // needs a role check to decide what to show.
+      //
+      // `extra` carries the one thing each cannot derive: whether to draw the
+      // teacher's collections, and whether the filter sheet offers an audience
+      // control. It is a nicety, not a dependency — it does not survive a deep
+      // link, and both fall back to the narrower, student-shaped variant, which
+      // is the one that is correct for any actor.
+      GoRoute(
+        path: AppRoutes.saved,
+        builder: (BuildContext context, GoRouterState state) =>
+            SavedScreen(withCollections: state.extra as bool? ?? false),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        builder: (BuildContext context, GoRouterState state) =>
+            SearchScreen(withAudience: state.extra as bool? ?? false),
+      ),
+      // The two task details (phase 4).
+      GoRoute(
+        path: AppRoutes.task,
+        builder: (BuildContext context, GoRouterState state) =>
+            TaskDetailScreen(
+              taskId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.studentTask,
+        builder: (BuildContext context, GoRouterState state) =>
+            StudentTaskDetailScreen(
+              taskId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
+      ),
+      // The phase-5 reports and the notification pair.
+      //
+      // `/tasks/:id/progress` is declared after `/tasks/:id` and does not
+      // shadow it: go_router matches on the full path, so the two are distinct
+      // routes rather than one with an optional tail.
+      GoRoute(
+        path: AppRoutes.taskProgress,
+        builder: (BuildContext context, GoRouterState state) =>
+            TaskProgressScreen(
+              taskId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.studentReport,
+        builder: (BuildContext context, GoRouterState state) =>
+            StudentTaskReportScreen(
+              taskId: state.pathParameters[AppRoutes.idParam] ?? '',
+              studentId:
+                  state.pathParameters[AppRoutes.studentIdParam] ?? '',
+              // The student's name, handed over by the row that pushed this.
+              // Like every other `extra` here it is a nicety: the screen falls
+              // back to wording that is correct without it.
+              studentName: state.extra as String?,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.classProgress,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ClassProgressScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (BuildContext context, GoRouterState state) =>
+            const NotificationInboxScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notificationPreferences,
+        builder: (BuildContext context, GoRouterState state) =>
+            const NotificationPreferencesScreen(),
+      ),
       // The tree and its two content leaves. Pushed over the shell
       // rather than nested in it: they are a drill-down out of the Library
       // tab, and the tab bar has nothing to offer while you are inside one.
@@ -226,6 +398,18 @@ String? _gate(SessionStatus status, String path) {
     SessionStatus.unauthenticated => isPublic ? null : AppRoutes.roleSelection,
   };
 }
+
+/// Parses `?type=` for the history route.
+///
+/// Anything unrecognised — including the enum's own `unknown` sentinel, which
+/// is a parse fallback and not a tab — answers `null`, so the screen opens on
+/// its default tab rather than on nothing.
+ActivityResourceType? _historyTypeFrom(String? raw) =>
+    switch (raw?.trim().toUpperCase()) {
+      'VIDEO' => ActivityResourceType.video,
+      'DOCUMENT' => ActivityResourceType.document,
+      _ => null,
+    };
 
 /// `/splash?from=<the route the user actually wanted>`.
 String _parkOnSplash(Uri intended) {

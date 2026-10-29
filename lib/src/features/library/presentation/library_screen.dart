@@ -54,6 +54,24 @@ class LibraryScreen extends ConsumerWidget {
       return SchoolSuspendedView(onSignOut: () => signOut(ref));
     }
 
+    return Column(
+      children: <Widget>[
+        // The search entry point (mobile plan §5.5). A tappable field rather
+        // than a live one: search is its own pushed screen with its own filter
+        // sheet and its own paging, and the shell owns this screen's app bar,
+        // so there is nowhere here to put a real field without the shell
+        // growing a per-tab action.
+        //
+        // `studentAgeBand` is null only for the teacher shell, so it is what
+        // decides whether the filter sheet offers an audience control — a fact
+        // derived from the tab set this screen was built into, not a role read.
+        _LibrarySearchField(withAudience: studentAgeBand == null),
+        Expanded(child: _buildList(ref, curricula)),
+      ],
+    );
+  }
+
+  Widget _buildList(WidgetRef ref, AsyncValue<List<CurriculumEntity>> curricula) {
     return RefreshIndicator(
       onRefresh: () => ref.read(libraryControllerProvider.notifier).refresh(),
       child: curricula.when(
@@ -71,6 +89,55 @@ class LibraryScreen extends ConsumerWidget {
           error: AppError.from(error),
           onRetry: () =>
               unawaited(ref.read(libraryControllerProvider.notifier).refresh()),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the search screen. Deliberately not a live field — see the comment at
+/// its use site.
+class _LibrarySearchField extends StatelessWidget {
+  const _LibrarySearchField({required this.withAudience});
+
+  final bool withAudience;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.spacingMd,
+        AppConstants.spacingMd,
+        AppConstants.spacingMd,
+        0,
+      ),
+      child: InkWell(
+        key: const ValueKey<String>('library-search-entry'),
+        borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+        onTap: () => context.push(AppRoutes.search, extra: withAudience),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            hintText: 'Search the library',
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          child: Text(
+            'Search the library',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

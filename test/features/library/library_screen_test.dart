@@ -15,10 +15,12 @@ import 'package:smart_teacher_mobile/src/features/library/presentation/widgets/c
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
 import '../../support/fake_token_storage.dart';
+import '../../support/shell_navigation.dart';
 
 void main() {
   group('the list (PRD §5.4.1)', () {
@@ -272,6 +274,7 @@ Future<ProviderContainer> _pumpLibrary(
 
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
@@ -294,7 +297,11 @@ Future<ProviderContainer> _pumpLibrary(
   );
   await tester.pumpAndSettle();
 
+  // Both shells open on Home now, so the library is a tab away. A suspended
+  // school replaces the shell entirely, tab bar included, so there is no tab
+  // to tap in that case.
   if (expectsLibrary) {
+    await openShellTab(tester, 'Library');
     expect(find.byType(LibraryScreen), findsOneWidget);
   }
   return container;

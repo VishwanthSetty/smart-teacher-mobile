@@ -19,6 +19,7 @@ import 'package:smart_teacher_mobile/src/features/roster/data/student_repository
 import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_profile_repository.dart';
@@ -90,6 +91,7 @@ Future<ProviderContainer> _pumpApp(
     // `Override` isn't exported by flutter_riverpod, so the list stays
     // inferred — matching the existing auth tests.
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
       authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
       profileRepositoryProvider.overrideWithValue(profile),
@@ -150,8 +152,16 @@ Future<void> _signOut(WidgetTester tester) async {
   await tester.pumpAndSettle();
   expect(find.byType(ProfileScreen), findsOneWidget);
 
+  // Scrolled to, not merely ensured visible: the profile body is a `ListView`,
+  // so a control below the fold has not been *built* and no finder can match
+  // it. That became true of sign-out once the profile grew its
+  // notification-settings tile.
   final Finder button = find.widgetWithText(FilledButton, 'Sign out');
-  await tester.ensureVisible(button);
+  await tester.scrollUntilVisible(
+    button,
+    120,
+    scrollable: find.byType(Scrollable).last,
+  );
   await tester.pumpAndSettle();
   await tester.tap(button);
   await tester.pumpAndSettle();

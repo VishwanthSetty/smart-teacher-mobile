@@ -16,6 +16,7 @@ import 'package:smart_teacher_mobile/src/features/profile/data/profile_repositor
 import 'package:smart_teacher_mobile/src/features/profile/domain/me_entity.dart';
 import 'package:smart_teacher_mobile/src/features/profile/presentation/profile_screen.dart';
 
+import '../../support/activity_overrides.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_profile_repository.dart';
 import '../../support/fake_token_storage.dart';
@@ -178,7 +179,7 @@ void main() {
     testWidgets('signs out from here', (WidgetTester tester) async {
       final ProviderContainer container = await _pumpProfile(tester);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+      await _tapVisible(tester, find.widgetWithText(FilledButton, 'Sign out'));
       await tester.pumpAndSettle();
 
       expect(
@@ -270,7 +271,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+      await _tapVisible(tester, find.widgetWithText(FilledButton, 'Sign out'));
       await tester.pumpAndSettle();
 
       expect(
@@ -294,6 +295,7 @@ Future<ProviderContainer> _pumpProfile(
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      ...activityOverrides(),
       tokenStorageProvider.overrideWithValue(
         FakeTokenStorage(accessToken: 'access', refreshToken: 'refresh'),
       ),
@@ -322,6 +324,19 @@ Future<ProviderContainer> _pumpProfile(
   expect(find.byType(ProfileScreen), findsOneWidget);
 
   return container;
+}
+
+/// The profile body scrolls and the sign-out button sits below the fold on the
+/// test surface — scroll it in rather than tapping at an offset that misses.
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    120,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pullToRefresh(WidgetTester tester) async {
