@@ -133,16 +133,18 @@ class TeacherHomeEntity {
   factory TeacherHomeEntity.fromJson(Map<String, dynamic> json) =>
       TeacherHomeEntity(
         classes: switch (json['classes']) {
-          final List<dynamic> rows => rows
-              .whereType<Map<String, dynamic>>()
-              .map(HomeClassEntity.fromJson)
-              .toList(growable: false),
+          final List<dynamic> rows =>
+            rows
+                .whereType<Map<String, dynamic>>()
+                .map(HomeClassEntity.fromJson)
+                .toList(growable: false),
           _ => const <HomeClassEntity>[],
         },
         continuePreparation: _activityList(json['continuePreparation']),
         completionSummary: switch (json['completionSummary']) {
-          final Map<String, dynamic> summary =>
-            TaskCompletionSummary.fromJson(summary),
+          final Map<String, dynamic> summary => TaskCompletionSummary.fromJson(
+            summary,
+          ),
           _ => const TaskCompletionSummary(),
         },
         activeTaskCount: _lengthOf(json['activeTasks']),

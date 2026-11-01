@@ -40,9 +40,7 @@ class HomeSection extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Expanded(
-                child: Text(title, style: theme.textTheme.titleMedium),
-              ),
+              Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
               if (onViewAll != null)
                 TextButton(onPressed: onViewAll, child: Text(viewAllLabel)),
             ],
@@ -146,33 +144,54 @@ class ContinueCard extends StatelessWidget {
     );
   }
 
-  /// `'Resume at 6:52'` for a video, `'page 7 of 24'` for a document.
-  ///
-  /// Falls back to the status label rather than inventing a position — a row
-  /// can exist with no position at all, and "Resume at 0:00" would be a
-  /// worse answer than none.
-  String get _resumeLabel {
-    if (activity.isDocument) {
-      return activity.readingLabel ?? 'Continue reading';
-    }
-    final int seconds = activity.positionSecs;
-    if (seconds <= 0) {
-      return 'Start watching';
-    }
-    return 'Resume at ${_formatDuration(Duration(seconds: seconds))}';
-  }
+  String get _resumeLabel => resumeLabelFor(activity);
 
-  void _open(BuildContext context) {
-    final String id = activity.resourceId;
-    if (id.isEmpty) {
-      return;
-    }
-    context.push(
-      activity.isVideo ? AppRoutes.videoPath(id) : AppRoutes.documentPath(id),
-      extra: activity.title,
-    );
-  }
+  void _open(BuildContext context) => openActivity(context, activity);
 }
+
+/// `'Resume at 6:52'` for a video, `'page 7 of 24'` for a document.
+///
+/// Falls back to a neutral prompt rather than inventing a position — a row can
+/// exist with no position at all, and "Resume at 0:00" would be a worse answer
+/// than none.
+String resumeLabelFor(ResourceActivityEntity activity) {
+  if (activity.isDocument) {
+    return activity.readingLabel ?? 'Continue reading';
+  }
+  final int seconds = activity.positionSecs;
+  if (seconds <= 0) {
+    return 'Start watching';
+  }
+  return 'Resume at ${formatPlaybackTime(seconds)}';
+}
+
+/// `'12:40 of 19:50 watched'` when both halves are known, otherwise the plain
+/// [resumeLabelFor] — the total is never guessed.
+String watchedLabelFor(ResourceActivityEntity activity) {
+  final int? total = activity.durationSecs;
+  final int position = activity.positionSecs;
+  if (activity.isVideo && total != null && total > 0 && position > 0) {
+    return '${formatPlaybackTime(position)} of ${formatPlaybackTime(total)} '
+        'watched';
+  }
+  return resumeLabelFor(activity);
+}
+
+/// Opens the player or the reader for [activity]. A row with no resource id
+/// (a malformed payload) does nothing rather than pushing a broken route.
+void openActivity(BuildContext context, ResourceActivityEntity activity) {
+  final String id = activity.resourceId;
+  if (id.isEmpty) {
+    return;
+  }
+  context.push(
+    activity.isVideo ? AppRoutes.videoPath(id) : AppRoutes.documentPath(id),
+    extra: activity.title,
+  );
+}
+
+String formatPlaybackTime(int seconds) =>
+    _formatDuration(Duration(seconds: seconds));
 
 String _formatDuration(Duration duration) {
   final int totalSeconds = duration.inSeconds;

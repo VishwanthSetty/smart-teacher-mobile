@@ -12,6 +12,7 @@ import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/library/presentation/curriculum_tree_screen.dart';
 import '../../features/library/presentation/document_reader_screen.dart';
+import '../../features/library/presentation/subject_island_screen.dart';
 import '../../features/library/presentation/video_player_screen.dart';
 import '../../features/notifications/presentation/notification_inbox_screen.dart';
 import '../../features/notifications/presentation/notification_preferences_screen.dart';
@@ -93,6 +94,9 @@ class AppRoutes {
   /// Parameterised, so they are built with the `*Path` helpers below rather
   /// than interpolated at the call site.
   static const String curriculumTree = '/curricula/:$idParam/tree';
+
+  /// The Play register's subject island map over the same tree.
+  static const String subjectIsland = '/curricula/:$idParam/island';
   static const String video = '/videos/:$idParam';
   static const String document = '/documents/:$idParam';
 
@@ -101,6 +105,9 @@ class AppRoutes {
 
   static String curriculumTreePath(String curriculumId) =>
       '/curricula/${Uri.encodeComponent(curriculumId)}/tree';
+
+  static String subjectIslandPath(String curriculumId) =>
+      '/curricula/${Uri.encodeComponent(curriculumId)}/island';
 
   static String videoPath(String videoId) =>
       '/videos/${Uri.encodeComponent(videoId)}';
@@ -344,6 +351,14 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.curriculumTree,
         builder: (BuildContext context, GoRouterState state) =>
             CurriculumTreeScreen(
+              curriculumId: state.pathParameters[AppRoutes.idParam] ?? '',
+              title: state.extra as String?,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.subjectIsland,
+        builder: (BuildContext context, GoRouterState state) =>
+            SubjectIslandScreen(
               curriculumId: state.pathParameters[AppRoutes.idParam] ?? '',
               title: state.extra as String?,
             ),

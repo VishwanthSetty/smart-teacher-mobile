@@ -23,4 +23,7 @@ class AppConstants {
 
   /// Default animation duration for micro-interactions.
   static const Duration animationDuration = Duration(milliseconds: 220);
+
+  /// The Focus/Teach press feedback (scale to 0.97).
+  static const Duration pressDuration = Duration(milliseconds: 140);
 }

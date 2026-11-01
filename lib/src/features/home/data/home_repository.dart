@@ -56,6 +56,7 @@ class DioHomeRepository implements HomeRepository {
   }
 }
 
-final Provider<HomeRepository> homeRepositoryProvider = Provider<HomeRepository>(
-  (Ref ref) => DioHomeRepository(ref.watch(dioProvider)),
-);
+final Provider<HomeRepository> homeRepositoryProvider =
+    Provider<HomeRepository>(
+      (Ref ref) => DioHomeRepository(ref.watch(dioProvider)),
+    );

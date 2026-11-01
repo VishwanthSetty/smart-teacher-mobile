@@ -9,7 +9,6 @@ import 'package:smart_teacher_mobile/src/core/session/session_controller.dart';
 import 'package:smart_teacher_mobile/src/core/storage/token_storage.dart';
 import 'package:smart_teacher_mobile/src/features/auth/data/auth_repository.dart';
 import 'package:smart_teacher_mobile/src/features/auth/presentation/role_selection_screen.dart';
-import 'package:smart_teacher_mobile/src/features/shell/domain/shell_tab.dart';
 import 'package:smart_teacher_mobile/src/features/shell/presentation/app_shell.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/current_user_controller.dart';
 import 'package:smart_teacher_mobile/src/features/profile/data/profile_repository.dart';
@@ -255,7 +254,7 @@ Future<ProviderContainer> _pumpSignedIn(
 /// Sign-out lives on the profile screen (PRD §5.2), so every one of these
 /// walks there first — the same route a user takes. The fake actor is a
 /// teacher, whose shell (§5.7) has no Profile tab, so the way there is the
-/// shell's app-bar action.
+/// profile button in the Home header.
 Future<void> _tapSignOut(WidgetTester tester) async {
   await _openProfile(tester);
   // Scrolled to, not merely ensured visible: the profile body is a `ListView`,
@@ -282,8 +281,7 @@ Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
 }
 
 Future<void> _openProfile(WidgetTester tester) async {
-  await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
+  await tester.tap(find.byTooltip('Profile'));
   await tester.pumpAndSettle();
   expect(find.byType(ProfileScreen), findsOneWidget);
 }
-

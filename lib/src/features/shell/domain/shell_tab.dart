@@ -40,6 +40,7 @@ enum ShellTab {
     icon: Icons.local_library_outlined,
     selectedIcon: Icons.local_library,
   ),
+
   /// Two Tasks destinations, not one — for exactly the reason the two Home
   /// values exist. `/me/tasks` and `/tasks` are different endpoints returning
   /// different shapes (assignments with the task nested, versus tasks with the
@@ -106,19 +107,19 @@ enum ShellTab {
 List<ShellTab> shellTabsFor(UserRole role) {
   return switch (role) {
     UserRole.teacher => const <ShellTab>[
-        ShellTab.teacherHome,
-        ShellTab.myClasses,
-        ShellTab.library,
-        ShellTab.teacherTasks,
-        ShellTab.roster,
-      ],
+      ShellTab.teacherHome,
+      ShellTab.myClasses,
+      ShellTab.library,
+      ShellTab.teacherTasks,
+      ShellTab.roster,
+    ],
     UserRole.student => const <ShellTab>[
-        ShellTab.studentHome,
-        ShellTab.library,
-        ShellTab.studentTasks,
-        ShellTab.saved,
-        ShellTab.profile,
-      ],
+      ShellTab.studentHome,
+      ShellTab.library,
+      ShellTab.studentTasks,
+      ShellTab.saved,
+      ShellTab.profile,
+    ],
     UserRole.unknown => const <ShellTab>[ShellTab.profile],
   };
 }

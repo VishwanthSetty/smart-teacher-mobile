@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_teacher_mobile/src/core/errors/app_error.dart';
 import 'package:smart_teacher_mobile/src/core/session/school_suspension_controller.dart';
+import 'package:smart_teacher_mobile/src/core/theme/student_age_band.dart';
+import 'package:smart_teacher_mobile/src/core/widgets/brand/owl_buddy.dart';
 import 'package:smart_teacher_mobile/src/core/widgets/school_suspended_view.dart';
 import 'package:smart_teacher_mobile/src/features/activity/domain/resource_activity_entity.dart';
 import 'package:smart_teacher_mobile/src/features/activity/domain/progress_summary_entity.dart';
@@ -11,14 +14,17 @@ import 'package:smart_teacher_mobile/src/features/home/domain/home_entity.dart';
 import 'package:smart_teacher_mobile/src/features/home/presentation/student_home_screen.dart';
 import 'package:smart_teacher_mobile/src/features/home/presentation/teacher_dashboard_screen.dart';
 import 'package:smart_teacher_mobile/src/features/home/presentation/widgets/continue_rail.dart';
+import 'package:smart_teacher_mobile/src/features/library/data/curriculum_repository.dart';
+import 'package:smart_teacher_mobile/src/features/library/domain/curriculum_entity.dart';
 
 import '../../support/activity_overrides.dart';
+import '../../support/fake_curriculum_repository.dart';
 import '../../support/fake_home_repository.dart';
 import '../../support/fake_progress_repository.dart';
 
 void main() {
   group('student home (mobile plan §5.1)', () {
-    testWidgets('renders the continue rail with a resume label', (
+    testWidgets('the newest resource leads the hero, the rest are a rail', (
       WidgetTester tester,
     ) async {
       await _pump(
@@ -33,14 +39,27 @@ void main() {
                 title: 'Photosynthesis',
                 positionSecs: 412,
               ),
+              buildActivity(id: 'b', videoId: 'v2', title: 'Respiration'),
             ],
           ),
         ),
       );
 
+      // The hero is not a rail card: only the second resource is.
+      expect(find.text('CONTINUE'), findsOneWidget);
+      expect(find.text('Photosynthesis'), findsOneWidget);
+      // With a known duration the hero says how far through it is
+      // ('6:52 of … watched'); without one it falls back to 'Resume at 6:52'.
+      expect(find.textContaining('6:52'), findsOneWidget);
       expect(find.text('Continue learning'), findsOneWidget);
       expect(find.byType(ContinueCard), findsOneWidget);
-      expect(find.text('Resume at 6:52'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ContinueCard),
+          matching: find.text('Respiration'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a document card shows a page, not a timestamp', (
@@ -80,14 +99,140 @@ void main() {
         ),
       );
 
-      expect(find.text('Hi, Ravi'), findsOneWidget);
+      expect(
+        find.textContaining(
+          RegExp(r'^Good (morning|afternoon|evening), Ravi$'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Kumar'), findsNothing);
+    });
+
+    testWidgets('lists the subjects with their item counts', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const StudentHomeScreen(),
+        home: FakeHomeRepository(
+          student: StudentHomeEntity(
+            recent: <ResourceActivityEntity>[
+              buildActivity(id: 'a', videoId: 'v1'),
+            ],
+          ),
+        ),
+        curricula: FakeCurriculumRepository(
+          curricula: <CurriculumEntity>[
+            buildCurriculum(subjectName: 'Science'),
+          ],
+        ),
+      );
+
+      expect(find.text('Subjects'), findsOneWidget);
+      expect(find.text('Science'), findsOneWidget);
+      // No progress summary row for it, so no percentage is invented.
+      expect(find.text('11 items'), findsOneWidget);
+    });
+
+    testWidgets('a student who has started nothing still sees their subjects', (
+      WidgetTester tester,
+    ) async {
+      // `/home/student` is all-empty for a brand-new student, but the library
+      // is not — Home must offer the subjects, not "Nothing here yet".
+      await _pump(
+        tester,
+        const StudentHomeScreen(
+          studentName: 'nursery',
+          ageBand: StudentAgeBand.explorers,
+        ),
+        home: FakeHomeRepository(),
+        curricula: FakeCurriculumRepository(
+          curricula: <CurriculumEntity>[
+            buildCurriculum(id: 'c1', subjectName: 'EVS'),
+            buildCurriculum(id: 'c2', subjectName: 'English'),
+          ],
+        ),
+      );
+
+      expect(find.text('Let’s learn'), findsOneWidget);
+      expect(find.text('EVS'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('Nothing here yet'), findsNothing);
+    });
+
+    testWidgets('the Focus register does the same', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const StudentHomeScreen(),
+        home: FakeHomeRepository(),
+        curricula: FakeCurriculumRepository(
+          curricula: <CurriculumEntity>[
+            buildCurriculum(subjectName: 'Science'),
+          ],
+        ),
+      );
+
+      expect(find.text('Science'), findsOneWidget);
+      expect(find.text('Nothing here yet'), findsNothing);
+    });
+
+    testWidgets('the Play register greets with the owl and clay subjects', (
+      WidgetTester tester,
+    ) async {
+      // Pre-primary to Grade 5 (StudentAgeBand.explorers / learners).
+      await _pump(
+        tester,
+        const StudentHomeScreen(
+          studentName: 'Ravi Kumar',
+          ageBand: StudentAgeBand.explorers,
+          classLabel: 'LKG · Sunflower',
+        ),
+        home: FakeHomeRepository(
+          student: StudentHomeEntity(
+            continueLearning: <ResourceActivityEntity>[
+              buildActivity(id: 'a', videoId: 'v1', title: 'Shapes Song'),
+            ],
+          ),
+        ),
+        curricula: FakeCurriculumRepository(
+          curricula: <CurriculumEntity>[buildCurriculum(subjectName: 'Rhymes')],
+        ),
+      );
+
+      expect(find.text('Hi, Ravi!'), findsOneWidget);
+      expect(find.text('LKG · Sunflower'), findsOneWidget);
+      expect(find.byType(OwlBuddy), findsOneWidget);
+      expect(find.text('TODAY'), findsOneWidget);
+      expect(find.text('Shapes Song'), findsOneWidget);
+      expect(find.text('Rhymes'), findsOneWidget);
+      // Progress is never a percentage in this register.
+      expect(find.textContaining('%'), findsNothing);
+
+      // Tapping the owl changes what it says.
+      final String before = tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byType(AnimatedSwitcher),
+              matching: find.byType(Text),
+            ),
+          )
+          .data!;
+      await tester.tap(find.byType(OwlBuddy));
+      await tester.pumpAndSettle();
+      expect(find.text(before), findsNothing);
     });
 
     testWidgets('an empty home says the class is not set up, not an error', (
       WidgetTester tester,
     ) async {
       // A student with no active enrollment has an empty library by design.
-      await _pump(tester, const StudentHomeScreen(), home: FakeHomeRepository());
+      await _pump(
+        tester,
+        const StudentHomeScreen(),
+        home: FakeHomeRepository(),
+      );
 
       expect(
         find.textContaining("Your class hasn't been set up yet"),
@@ -193,8 +338,29 @@ void main() {
       );
 
       expect(find.text('Across 3 active tasks'), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
-      expect(find.text('8'), findsOneWidget);
+      expect(find.text('8 done'), findsOneWidget);
+      expect(find.text('5 started'), findsOneWidget);
+      expect(find.text('12 not yet'), findsOneWidget);
+      expect(find.text('See class progress'), findsOneWidget);
+    });
+
+    testWidgets('greets the teacher and offers the one Assign action', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const TeacherDashboardScreen(teacherName: 'Sunita Rao'),
+        home: FakeHomeRepository(),
+      );
+
+      expect(
+        find.textContaining(
+          RegExp(r'^Good (morning|afternoon|evening), Sunita$'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('SR'), findsOneWidget);
+      expect(find.text('Assign task'), findsOneWidget);
     });
 
     testWidgets('hides the completion card when nothing is assigned', (
@@ -270,9 +436,7 @@ void main() {
       expect(find.widgetWithText(AppBar, 'My preparation'), findsOneWidget);
     });
 
-    testWidgets('an empty summary names no cause', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('an empty summary names no cause', (WidgetTester tester) async {
       // Which of "unentitled school" or "no enrollment" applies is a
       // server-side fact this screen cannot see.
       await _pump(
@@ -291,9 +455,16 @@ Future<ProviderContainer> _pump(
   Widget screen, {
   FakeHomeRepository? home,
   FakeProgressRepository? progress,
+  FakeCurriculumRepository? curricula,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: activityOverrides(home: home, progress: progress),
+    overrides: <Override>[
+      ...activityOverrides(home: home, progress: progress),
+      // The student home's subject rows read the library list.
+      curriculumRepositoryProvider.overrideWithValue(
+        curricula ?? FakeCurriculumRepository(curricula: <CurriculumEntity>[]),
+      ),
+    ],
   );
   addTearDown(container.dispose);
 

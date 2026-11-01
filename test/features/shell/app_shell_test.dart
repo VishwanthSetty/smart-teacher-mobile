@@ -110,8 +110,9 @@ void main() {
         'Roster',
       ]);
       expect(find.byType(TeacherDashboardScreen), findsOneWidget);
-      // The app bar names the current tab.
-      expect(find.widgetWithText(AppBar, 'Home'), findsOneWidget);
+      // Home draws its own greeting header, so the shell draws no app bar
+      // over it; every other tab's app bar names the tab.
+      expect(find.byType(AppBar), findsNothing);
     });
 
     testWidgets('tapping through the tabs swaps the body', (
@@ -137,15 +138,13 @@ void main() {
     });
 
     testWidgets(
-      'has no Profile tab, but reaches the profile from the app bar',
+      'has no Profile tab, but reaches the profile from the Home header',
       (WidgetTester tester) async {
         await _pumpShell(tester, role: UserRole.teacher, name: 'Asha Rao');
 
         expect(_destinationLabels(tester), isNot(contains('Profile')));
 
-        await tester.tap(
-          find.widgetWithIcon(IconButton, ShellTab.profile.icon),
-        );
+        await tester.tap(find.byTooltip('Profile'));
         await tester.pumpAndSettle();
 
         expect(find.byType(ProfileScreen), findsOneWidget);
@@ -161,7 +160,7 @@ void main() {
         role: UserRole.teacher,
       );
 
-      await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
+      await tester.tap(find.byTooltip('Profile'));
       await tester.pumpAndSettle();
       await _tapSignOut(tester);
 
@@ -200,7 +199,7 @@ void main() {
         'Saved',
         'Profile',
       ]);
-      expect(find.widgetWithText(AppBar, 'Home'), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
       expect(find.byType(StudentHomeScreen), findsOneWidget);
       // The teacher's dashboard must not be built for a student at all — the
       // two Home tabs are different destinations, not one with a branch.

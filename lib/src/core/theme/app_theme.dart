@@ -4,7 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_constants.dart';
 import 'app_colors.dart';
 
-/// The Flutter expression of the design system generated in Google Stitch.
+/// The Flutter expression of the Smart Teacher design system ("one brand,
+/// three registers"): Deep Blue leads, Navy carries hero cards, Sun is the
+/// one highlight, and the Focus/Teach ground is a cool off-white.
+///
+/// The Play register (Pre-primary to Grade 5) layers its clay styling on top
+/// of this theme inside its own widgets rather than as a second theme, so a
+/// pushed route from a Play screen still looks like the rest of the app.
 class AppTheme {
   const AppTheme._();
 
@@ -21,17 +27,25 @@ class AppTheme {
         ).copyWith(
           primary: isDark ? AppColors.sky400 : AppColors.blue,
           onPrimary: isDark ? AppColors.darkBackground : AppColors.white,
-          primaryContainer: isDark ? AppColors.darkOutline : AppColors.sky50,
-          onPrimaryContainer: isDark ? AppColors.darkText : AppColors.navy,
+          primaryContainer: isDark ? AppColors.darkOutline : AppColors.mist,
+          onPrimaryContainer: isDark
+              ? AppColors.darkText
+              : AppColors.deepBlueDark,
           secondary: isDark ? AppColors.sky400 : AppColors.navy,
           onSecondary: isDark ? AppColors.darkBackground : AppColors.white,
-          secondaryContainer: isDark ? AppColors.darkOutline : AppColors.sky100,
+          secondaryContainer: isDark ? AppColors.darkOutline : AppColors.mist,
           onSecondaryContainer: isDark ? AppColors.darkText : AppColors.navy,
           surface: isDark ? AppColors.darkBackground : AppColors.white,
           onSurface: isDark ? AppColors.darkText : AppColors.textPrimary,
           onSurfaceVariant: isDark ? AppColors.sky200 : AppColors.textSecondary,
           outline: isDark ? AppColors.darkOutline : AppColors.textDisabled,
-          outlineVariant: isDark ? AppColors.darkOutline : AppColors.sky50,
+          outlineVariant: isDark ? AppColors.darkOutline : AppColors.line,
+          tertiary: isDark ? AppColors.sun : AppColors.sunLip,
+          tertiaryContainer: isDark ? AppColors.darkOutline : AppColors.sunPale,
+          onTertiaryContainer: isDark ? AppColors.darkText : AppColors.sunInk,
+          surfaceContainerHighest: isDark
+              ? AppColors.darkOutline
+              : AppColors.line,
           error: AppColors.danger,
           onError: AppColors.white,
         );
@@ -55,7 +69,9 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colors,
       textTheme: textTheme,
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.ground,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: _SmoothPageTransitionsBuilder(),
@@ -67,26 +83,26 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        backgroundColor: colors.surface,
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.ground,
         foregroundColor: colors.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.titleLarge?.copyWith(
-          color: isDark ? AppColors.sky400 : AppColors.navy,
+          color: isDark ? AppColors.sky400 : AppColors.focusText,
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: isDark ? 0 : 2,
+        elevation: isDark ? 0 : 1.5,
         shadowColor: isDark
             ? Colors.transparent
-            : AppColors.navy.withValues(alpha: 0.08),
+            : AppColors.brandNavy.withValues(alpha: 0.10),
         color: isDark ? AppColors.darkSurface : AppColors.white,
         surfaceTintColor: Colors.transparent,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           side: BorderSide(
-            color: isDark ? AppColors.darkOutline : AppColors.sky50,
+            color: isDark ? AppColors.darkOutline : Colors.transparent,
           ),
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         ),
@@ -113,7 +129,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? AppColors.darkSurface : AppColors.sky50,
+        fillColor: isDark ? AppColors.darkSurface : AppColors.white,
         constraints: const BoxConstraints(minHeight: 56),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
@@ -121,7 +137,10 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+            color: isDark ? AppColors.darkOutline : AppColors.fieldBorder,
+            width: 1.5,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
@@ -137,27 +156,26 @@ class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: 72,
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
-        indicatorColor: colors.primaryContainer,
+        indicatorColor: isDark ? AppColors.darkOutline : AppColors.mist,
+        indicatorShape: const StadiumBorder(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
           (Set<WidgetState> states) => IconThemeData(
-            size: 24,
+            size: 22,
             color: states.contains(WidgetState.selected)
-                ? colors.primary
-                : colors.onSurfaceVariant,
+                ? (isDark ? AppColors.sky400 : AppColors.deepBlue)
+                : (isDark ? AppColors.sky200 : AppColors.focusTextSubtle),
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
           (Set<WidgetState> states) => textTheme.labelMedium?.copyWith(
             color: states.contains(WidgetState.selected)
-                ? colors.primary
-                : colors.onSurfaceVariant,
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
-                : FontWeight.w600,
+                ? (isDark ? AppColors.sky400 : AppColors.deepBlueDark)
+                : (isDark ? AppColors.sky200 : AppColors.focusTextSubtle),
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),

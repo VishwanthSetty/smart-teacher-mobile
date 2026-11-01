@@ -36,8 +36,9 @@ import '../../support/fake_token_storage.dart';
 /// inherited the first one's profile and a student landed in the teacher
 /// shell.
 void main() {
-  testWidgets('a student signing in after a teacher gets the student shell',
-      (WidgetTester tester) async {
+  testWidgets('a student signing in after a teacher gets the student shell', (
+    WidgetTester tester,
+  ) async {
     final FakeProfileRepository profile = FakeProfileRepository(
       user: buildMe(
         id: 'teacher-1',
@@ -79,9 +80,9 @@ void main() {
 
 /// A tab bar entry, as opposed to the same label appearing in the tab body.
 Finder _tab(ShellTab tab) => find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.text(tab.label),
-    );
+  of: find.byType(NavigationBar),
+  matching: find.text(tab.label),
+);
 
 Future<ProviderContainer> _pumpApp(
   WidgetTester tester,
@@ -97,7 +98,9 @@ Future<ProviderContainer> _pumpApp(
       profileRepositoryProvider.overrideWithValue(profile),
       // Both shells build every tab up front, so an unoverridden repository
       // here would go to the network.
-      curriculumRepositoryProvider.overrideWithValue(FakeCurriculumRepository()),
+      curriculumRepositoryProvider.overrideWithValue(
+        FakeCurriculumRepository(),
+      ),
       teacherAssignmentRepositoryProvider.overrideWithValue(
         FakeTeacherAssignmentRepository(),
       ),
@@ -127,10 +130,7 @@ Future<void> _signIn(
   await tester.pumpAndSettle();
   expect(find.byType(LoginScreen), findsOneWidget);
 
-  await tester.enterText(
-    find.widgetWithText(TextFormField, 'Email'),
-    email,
-  );
+  await tester.enterText(find.widgetWithText(TextFormField, 'Email'), email);
   await tester.enterText(
     find.widgetWithText(TextFormField, 'Password'),
     'correct-horse',
@@ -146,9 +146,9 @@ Future<void> _signIn(
 }
 
 /// Sign-out lives on the profile screen (PRD §5.2). The teacher shell has no
-/// Profile tab, so the way there is the app-bar action.
+/// Profile tab, so the way there is the profile button in the Home header.
 Future<void> _signOut(WidgetTester tester) async {
-  await tester.tap(find.widgetWithIcon(IconButton, ShellTab.profile.icon));
+  await tester.tap(find.byTooltip('Profile'));
   await tester.pumpAndSettle();
   expect(find.byType(ProfileScreen), findsOneWidget);
 

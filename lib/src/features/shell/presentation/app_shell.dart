@@ -6,13 +6,14 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/school_suspension_controller.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/student_age_band.dart';
 import '../../../core/widgets/school_suspended_view.dart';
 import '../../classes/presentation/my_classes_screen.dart';
 import '../../home/presentation/student_home_screen.dart';
 import '../../home/presentation/teacher_dashboard_screen.dart';
 import '../../library/presentation/library_screen.dart';
-import '../../notifications/presentation/notifications_controller.dart';
+import '../../notifications/presentation/widgets/notification_bell.dart';
 import '../../profile/domain/me_entity.dart';
 import '../../profile/presentation/profile_controller.dart';
 import '../../profile/presentation/profile_view.dart';
@@ -100,31 +101,43 @@ class _AppShellState extends ConsumerState<AppShell> {
     final StudentAgeBand? studentAgeBand = isStudentShell
         ? StudentAgeBand.fromGradeRank(user.enrollment?.gradeLevelRank)
         : null;
+    // The Play register (Pre-primary to Grade 5) gets the floating clay tab
+    // bar; Focus and Teach share the flat one from the theme.
+    final bool isPlay =
+        studentAgeBand == StudentAgeBand.explorers ||
+        studentAgeBand == StudentAgeBand.learners;
+    // Home tabs draw their own greeting header — bell and, for the teacher,
+    // the profile button included — so the shell draws no app bar over them.
+    final bool ownHeader =
+        current == ShellTab.studentHome || current == ShellTab.teacherHome;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(current.label),
-        actions: <Widget>[
-          // The notification inbox (mobile plan §5.10). An app-bar action for
-          // **both** shells rather than a tab: every tab set is already at five
-          // destinations, which is a bottom bar's limit, and the inbox is a
-          // place you visit when the badge says to rather than one you navigate
-          // between. It is not a role branch — both roles get the same action,
-          // because `/me/notifications` is actor-scoped and answers for
-          // whoever is signed in.
-          const _NotificationsAction(),
-          // Only for a tab set that has no Profile tab of its own — i.e. the
-          // teacher's. Without it a teacher could never reach sign-out, which
-          // lives on the profile screen (§5.1.3). Derived from the tab list,
-          // so it is still not a role check.
-          if (!tabs.contains(ShellTab.profile))
-            IconButton(
-              icon: Icon(ShellTab.profile.icon),
-              tooltip: ShellTab.profile.label,
-              onPressed: () => context.push(AppRoutes.profile),
+      backgroundColor: isPlay ? AppColors.cloud : null,
+      appBar: ownHeader
+          ? null
+          : AppBar(
+              title: Text(current.label),
+              actions: <Widget>[
+                // The notification inbox (mobile plan §5.10). An app-bar action for
+                // **both** shells rather than a tab: every tab set is already at five
+                // destinations, which is a bottom bar's limit, and the inbox is a
+                // place you visit when the badge says to rather than one you navigate
+                // between. It is not a role branch — both roles get the same action,
+                // because `/me/notifications` is actor-scoped and answers for
+                // whoever is signed in.
+                const NotificationBell.appBar(),
+                // Only for a tab set that has no Profile tab of its own — i.e. the
+                // teacher's. Without it a teacher could never reach sign-out, which
+                // lives on the profile screen (§5.1.3). Derived from the tab list,
+                // so it is still not a role check.
+                if (!tabs.contains(ShellTab.profile))
+                  IconButton(
+                    icon: Icon(ShellTab.profile.icon),
+                    tooltip: ShellTab.profile.label,
+                    onPressed: () => context.push(AppRoutes.profile),
+                  ),
+              ],
             ),
-        ],
-      ),
       // IndexedStack, so switching tabs keeps each one's scroll position and
       // loaded data instead of rebuilding it from scratch every tap.
       body: SafeArea(
@@ -134,6 +147,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             for (final ShellTab tab in tabs)
               _bodyFor(
                 tab,
+                user: user,
                 studentAgeBand: studentAgeBand,
                 studentName: isStudentShell ? user.name : null,
               ),
@@ -146,18 +160,11 @@ class _AppShellState extends ConsumerState<AppShell> {
       // is that short today.
       bottomNavigationBar: tabs.length < 2
           ? null
-          : NavigationBar(
-              selectedIndex: index,
-              onDestinationSelected: (int next) =>
-                  setState(() => _selected = next),
-              destinations: <Widget>[
-                for (final ShellTab tab in tabs)
-                  NavigationDestination(
-                    icon: Icon(tab.icon),
-                    selectedIcon: Icon(tab.selectedIcon),
-                    label: tab.label,
-                  ),
-              ],
+          : _ShellNavigationBar(
+              tabs: tabs,
+              index: index,
+              isPlay: isPlay,
+              onSelected: (int next) => setState(() => _selected = next),
             ),
     );
   }
@@ -169,11 +176,16 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// until it has something to render.
   Widget _bodyFor(
     ShellTab tab, {
+    required MeEntity user,
     required StudentAgeBand? studentAgeBand,
     required String? studentName,
   }) => switch (tab) {
-    ShellTab.studentHome => StudentHomeScreen(studentName: studentName),
-    ShellTab.teacherHome => const TeacherDashboardScreen(),
+    ShellTab.studentHome => StudentHomeScreen(
+      studentName: studentName,
+      ageBand: studentAgeBand,
+      classLabel: _classLabelOf(user.enrollment),
+    ),
+    ShellTab.teacherHome => TeacherDashboardScreen(teacherName: user.name),
     ShellTab.myClasses => const MyClassesScreen(),
     ShellTab.roster => const RosterScreen(),
     ShellTab.library => LibraryScreen(
@@ -190,33 +202,104 @@ class _AppShellState extends ConsumerState<AppShell> {
   };
 }
 
-/// The inbox action, with its unread badge (mobile plan §5.10).
+/// `'Grade 8 · Section B'`, preferring the server-composed label; null for an
+/// unplaced student, whose header then has no caption rather than a blank one.
+String? _classLabelOf(StudentEnrollmentSummary? enrollment) {
+  if (enrollment == null) {
+    return null;
+  }
+  final String composed = enrollment.sectionLabel.trim();
+  if (composed.isNotEmpty) {
+    return composed;
+  }
+  final String label = <String>[
+    enrollment.gradeLevelName.trim(),
+    enrollment.sectionName.trim(),
+  ].where((String part) => part.isNotEmpty).join(' · ');
+  return label.isEmpty ? null : label;
+}
+
+/// The bottom tab bar, in the register's look.
 ///
-/// The count comes from the loaded inbox rather than from a count endpoint,
-/// because there isn't one — so it is capped at the first page and the label
-/// says `9+` past nine rather than claiming a total it cannot know. A badge is
-/// an invitation; an exact number it might be wrong about is not worth the
-/// extra round trip the honest version would need.
-///
-/// Watching [unreadNotificationCountProvider] from the shell is what keeps
-/// `NotificationsController` alive for the session, which is why that
-/// controller is not auto-disposing and why it clears itself on sign-out.
-class _NotificationsAction extends ConsumerWidget {
-  const _NotificationsAction();
+/// Always a [NavigationBar] of [NavigationDestination]s — only the chrome
+/// differs. Focus and Teach use the flat white bar from the theme (top
+/// hairline, Mist pill). Play floats it as a rounded white clay slab with a
+/// Brinda Blue blob behind the selected icon, per the Little Learners design.
+class _ShellNavigationBar extends StatelessWidget {
+  const _ShellNavigationBar({
+    required this.tabs,
+    required this.index,
+    required this.isPlay,
+    required this.onSelected,
+  });
+
+  final List<ShellTab> tabs;
+  final int index;
+  final bool isPlay;
+  final ValueChanged<int> onSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final int unread = unreadNotificationCount(
-      ref.watch(notificationsControllerProvider),
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    final Widget bar = NavigationBar(
+      selectedIndex: index,
+      onDestinationSelected: onSelected,
+      backgroundColor: isPlay ? Colors.transparent : null,
+      indicatorColor: isPlay ? AppColors.brindaBlue : null,
+      indicatorShape: isPlay
+          ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))
+          : null,
+      height: isPlay ? 76 : null,
+      destinations: <Widget>[
+        for (final ShellTab tab in tabs)
+          NavigationDestination(
+            icon: Icon(tab.icon),
+            selectedIcon: Icon(
+              tab.selectedIcon,
+              color: isPlay ? AppColors.white : null,
+            ),
+            label: tab.label,
+          ),
+      ],
     );
 
-    return IconButton(
-      tooltip: 'Notifications',
-      onPressed: () => context.push(AppRoutes.notifications),
-      icon: Badge(
-        isLabelVisible: unread > 0,
-        label: Text(unread > 9 ? '9+' : '$unread'),
-        child: const Icon(Icons.notifications_none_outlined),
+    if (!isPlay) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.darkOutline : AppColors.line,
+            ),
+          ),
+        ),
+        child: bar,
+      );
+    }
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: <BoxShadow>[
+            const BoxShadow(color: AppColors.playLip, offset: Offset(0, 6)),
+            BoxShadow(
+              color: AppColors.deepBlueDark.withValues(alpha: 0.12),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: MediaQuery.removePadding(
+          context: context,
+          removeBottom: true,
+          child: bar,
+        ),
       ),
     );
   }
